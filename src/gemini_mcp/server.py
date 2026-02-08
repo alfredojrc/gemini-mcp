@@ -288,9 +288,13 @@ def load_plugins() -> None:
         if plugin_file.name.startswith("_"):
             continue
 
-        # --- Allowlist gate ---
-        if allowlist is not None and plugin_file.name not in allowlist:
-            logger.debug(f"Plugin not in allowlist, skipping: {plugin_file.name}")
+        # --- Allowlist gate (check relative path, not just filename) ---
+        try:
+            check_name = str(plugin_file.relative_to(plugin_path))
+        except ValueError:
+            check_name = plugin_file.name
+        if allowlist is not None and check_name not in allowlist:
+            logger.debug(f"Plugin not in allowlist, skipping: {check_name}")
             continue
 
         # --- Integrity gate ---
@@ -317,35 +321,21 @@ def _run_with_auth() -> None:
     Uses Starlette mounting pattern from MCP SDK docs: get the inner app
     via mcp.sse_app(), wrap it in a Starlette app with middleware stack,
     then run via uvicorn directly.
+
+    All middleware use pure ASGI protocol (not BaseHTTPMiddleware) to avoid
+    SSE streaming buffer issues. See middleware.py docstring for details.
     """
     import uvicorn
     from starlette.applications import Starlette
     from starlette.middleware import Middleware
-    from starlette.middleware.base import BaseHTTPMiddleware
     from starlette.routing import Mount
 
-    from .middleware import RateLimitMiddleware, RequestSizeLimitMiddleware
+    from .middleware import BearerAuthMiddleware, RateLimitMiddleware, RequestSizeLimitMiddleware
 
     token = _AUTH_TOKEN or config.auth_token
 
-    class _BearerAuthMiddleware(BaseHTTPMiddleware):
-        """Reject HTTP requests that lack a valid Bearer token."""
-
-        async def dispatch(self, request: Request, call_next):  # type: ignore[override]
-            if request.url.path == "/health":
-                return await call_next(request)
-
-            auth_header = request.headers.get("authorization", "")
-            if not auth_header.startswith("Bearer ") or auth_header[7:] != token:
-                return JSONResponse(
-                    {"error": "unauthorized"},
-                    status_code=401,
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            return await call_next(request)
-
     # Build middleware stack: auth first, then rate limit, then size limit
-    middleware = [Middleware(_BearerAuthMiddleware)]
+    middleware = [Middleware(BearerAuthMiddleware, token=token)]
 
     if config.rate_limit > 0:
         middleware.append(

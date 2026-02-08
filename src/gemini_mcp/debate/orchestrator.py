@@ -356,8 +356,11 @@ class DebateOrchestrator:
 
         for round_num in range(1, debate_cfg.max_rounds + 1):
             if progress_callback:
-                progress = round_num / (debate_cfg.max_rounds + 1)
-                await progress_callback(progress, f"Round {round_num}...")
+                try:
+                    progress = round_num / (debate_cfg.max_rounds + 1)
+                    await progress_callback(progress, f"Round {round_num}...")
+                except Exception:
+                    logger.warning("Progress callback failed", exc_info=True)
 
             # Expert A — default/pro model, lower temperature
             expert_a_prompt = self._build_expert_prompt(
@@ -411,7 +414,10 @@ class DebateOrchestrator:
 
         # Generate synthesis
         if progress_callback:
-            await progress_callback(0.9, "Generating synthesis...")
+            try:
+                await progress_callback(0.9, "Generating synthesis...")
+            except Exception:
+                logger.warning("Progress callback failed", exc_info=True)
 
         synthesis = await self._generate_synthesis(debate_cfg.topic, rounds)
 
@@ -576,8 +582,10 @@ Respond with ONLY a JSON object (no markdown fences):
         depth = 0
         in_string = False
         escape = False
+        # Bound scan to prevent CPU exhaustion on malformed input
+        max_scan = min(len(text), start + 100_000)
 
-        for i in range(start, len(text)):
+        for i in range(start, max_scan):
             c = text[i]
             if escape:
                 escape = False

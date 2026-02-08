@@ -126,7 +126,10 @@ class SwarmOrchestrator:
             trace.error = str(e)
             trace.completed_at = datetime.now()
             self.trace_store.save(trace)
-            await self.swarm_registry.unregister(trace.trace_id)
+        finally:
+            # Ensure cleanup even on cancellation (CancelledError bypasses except Exception)
+            if self.swarm_registry.is_running(trace.trace_id):
+                await self.swarm_registry.unregister(trace.trace_id)
 
     # ------------------------------------------------------------------
     # Core mission loop — delegation + depth enforcement + timeout
@@ -158,8 +161,11 @@ class SwarmOrchestrator:
                     break
 
                 if progress_callback:
-                    pct = min(0.9, turn / (max_turns + 1))
-                    await progress_callback(pct, f"Turn {turn}/{max_turns}...")
+                    try:
+                        pct = min(0.9, turn / (max_turns + 1))
+                        await progress_callback(pct, f"Turn {turn}/{max_turns}...")
+                    except Exception:
+                        logger.warning("Progress callback failed", exc_info=True)
 
                 # Build architect prompt including delegation results
                 prompt = self._build_architect_prompt(
@@ -203,7 +209,10 @@ class SwarmOrchestrator:
                     await self.swarm_registry.unregister(trace.trace_id)
 
                     if progress_callback:
-                        await progress_callback(1.0, "Mission complete")
+                        try:
+                            await progress_callback(1.0, "Mission complete")
+                        except Exception:
+                            logger.warning("Progress callback failed", exc_info=True)
 
                     return SwarmResult(
                         trace_id=trace.trace_id,
@@ -217,6 +226,8 @@ class SwarmOrchestrator:
 
                 if delegations:
                     # Execute delegations (up to max_depth concurrent)
+                    # Time budget: remaining time from mission timeout
+                    remaining_time = max(10.0, timeout - (time.time() - start_time))
                     for agent_name, task_desc in delegations[: self.max_depth]:
                         # Try built-in agent types first, then custom personas
                         agent_def = None
@@ -226,20 +237,37 @@ class SwarmOrchestrator:
                             agent_def = self.registry.get(agent_type)
                         except ValueError:
                             # Check custom personas
-                            if self.registry.has_custom(agent_name):
-                                agent_def = self.registry.get_by_name(agent_name)
-                                agent_type = agent_def.agent_type
-                            else:
-                                logger.warning(f"Unknown agent '{agent_name}', skipping delegation")
+                            try:
+                                if self.registry.has_custom(agent_name):
+                                    agent_def = self.registry.get_by_name(agent_name)
+                                    agent_type = agent_def.agent_type
+                                else:
+                                    logger.warning(
+                                        f"Unknown agent '{agent_name}', skipping delegation"
+                                    )
+                                    continue
+                            except (ValueError, KeyError):
+                                logger.warning(
+                                    f"Failed to resolve agent '{agent_name}', skipping delegation"
+                                )
                                 continue
 
                         agents_used.add(agent_type)
-                        sub_result = await self._execute_agent(
-                            agent_def,
-                            task_desc,
-                            trace.objective,
-                            context,
-                        )
+                        try:
+                            sub_result = await asyncio.wait_for(
+                                self._execute_agent(
+                                    agent_def,
+                                    task_desc,
+                                    trace.objective,
+                                    context,
+                                ),
+                                timeout=remaining_time,
+                            )
+                        except TimeoutError:
+                            logger.warning(
+                                f"Agent {agent_name} timed out after {remaining_time:.0f}s"
+                            )
+                            sub_result = f"[Agent {agent_name} timed out]"
                         agent_results[agent_type.value] = sub_result
                         trace.messages.append(
                             SwarmMessage(
@@ -259,7 +287,10 @@ class SwarmOrchestrator:
                     await self.swarm_registry.unregister(trace.trace_id)
 
                     if progress_callback:
-                        await progress_callback(1.0, "Mission complete")
+                        try:
+                            await progress_callback(1.0, "Mission complete")
+                        except Exception:
+                            logger.warning("Progress callback failed", exc_info=True)
 
                     return SwarmResult(
                         trace_id=trace.trace_id,
@@ -363,16 +394,29 @@ class SwarmOrchestrator:
 
     @staticmethod
     def _parse_delegations(text: str) -> list[tuple[str, str]]:
-        """Extract delegate(agent, task) calls from architect output."""
-        pattern = r'delegate\(\s*["\']?(\w+)["\']?\s*,\s*["\']?(.*?)["\']?\s*\)'
-        return re.findall(pattern, text, re.IGNORECASE)
+        """Extract delegate(agent, task) calls from architect output.
+
+        Uses ``[^)]{1,2000}`` instead of ``.*?`` with optional quotes to
+        prevent catastrophic backtracking (ReDoS) on malformed input.
+        """
+        results: list[tuple[str, str]] = []
+        for match in re.finditer(r"delegate\(([^)]{1,2000})\)", text, re.IGNORECASE):
+            inner = match.group(1).strip()
+            parts = inner.split(",", 1)
+            if len(parts) == 2:
+                agent = parts[0].strip().strip("\"'")
+                task = parts[1].strip().strip("\"'")
+                if re.fullmatch(r"\w+", agent):
+                    results.append((agent, task))
+        return results
 
     @staticmethod
     def _parse_completion(text: str) -> str | None:
         """Extract complete(result) from architect output."""
         match = re.search(r"complete\((.*)\)", text, re.DOTALL | re.IGNORECASE)
         if match:
-            return match.group(1).strip().strip("\"'")
+            result = match.group(1).strip().strip("\"'")
+            return result if result else None
         return None
 
     # ------------------------------------------------------------------
@@ -420,12 +464,23 @@ class SwarmOrchestrator:
         if not panel_personas:
             panel_personas = ["architect", "analyst", "reviewer"]
 
+        # Cap panel size to prevent excessive API calls
+        max_panel_size = 10
+        if len(panel_personas) > max_panel_size:
+            logger.warning(
+                f"Panel size {len(panel_personas)} exceeds maximum {max_panel_size}, truncating"
+            )
+            panel_personas = panel_personas[:max_panel_size]
+
         votes: list[PanelVote] = []
 
         for i, persona_name in enumerate(panel_personas):
             if progress_callback:
-                progress = (i + 1) / (len(panel_personas) + 1)
-                await progress_callback(progress, f"Expert {persona_name} deliberating...")
+                try:
+                    progress = (i + 1) / (len(panel_personas) + 1)
+                    await progress_callback(progress, f"Expert {persona_name} deliberating...")
+                except Exception:
+                    logger.warning("Progress callback failed", exc_info=True)
 
             try:
                 agent_type = AgentType(persona_name.lower())
@@ -475,7 +530,10 @@ Respond in JSON with these fields:
 
         # Synthesize verdict
         if progress_callback:
-            await progress_callback(0.9, "Synthesizing verdict...")
+            try:
+                await progress_callback(0.9, "Synthesizing verdict...")
+            except Exception:
+                logger.warning("Progress callback failed", exc_info=True)
 
         synthesis_prompt = f"""As the presiding judge, synthesize these expert opinions:
 

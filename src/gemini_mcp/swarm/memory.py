@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ class TraceStore:
     def __init__(self) -> None:
         self.storage_dir = config.data_dir / "swarm" / "traces"
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self._quota_lock = threading.Lock()
 
     def _lock_for(self, trace_file: Path) -> FileLock:
         """Return a FileLock sidecar for *trace_file*."""
@@ -54,21 +56,24 @@ class TraceStore:
             with self._lock_for(trace_file):
                 trace_file.write_text(json.dumps(data, indent=2))
         except Timeout:
-            logger.warning(f"Lock timeout writing trace {trace.trace_id}, writing without lock")
-            trace_file.write_text(json.dumps(data, indent=2))
+            logger.error(
+                f"Lock timeout writing trace {trace.trace_id}, skipping write to avoid corruption"
+            )
+            return
 
         self._enforce_quota()
 
     def _enforce_quota(self) -> None:
-        """Remove oldest trace files when over quota."""
-        files = sorted(self.storage_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
-        while len(files) > _MAX_TRACE_FILES:
-            oldest = files.pop(0)
-            oldest.unlink(missing_ok=True)
-            # Clean up sidecar lock file
-            lock_file = Path(str(oldest) + ".lock")
-            lock_file.unlink(missing_ok=True)
-            logger.debug(f"Pruned old trace: {oldest.name}")
+        """Remove oldest trace files when over quota (thread-safe)."""
+        with self._quota_lock:
+            files = sorted(self.storage_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
+            while len(files) > _MAX_TRACE_FILES:
+                oldest = files.pop(0)
+                oldest.unlink(missing_ok=True)
+                # Clean up sidecar lock file
+                lock_file = Path(str(oldest) + ".lock")
+                lock_file.unlink(missing_ok=True)
+                logger.debug(f"Pruned old trace: {oldest.name}")
 
     def load(self, trace_id: str) -> ExecutionTrace | None:
         """Load trace from disk with file locking."""

@@ -236,49 +236,36 @@ async def analyze(
     Returns:
         Analysis results
     """
-    # Detect target type
-    is_likely_code = (
-        "\n" in target
-        or target.startswith("```")
-        or target.startswith("def ")
-        or target.startswith("class ")
-        or target.startswith("import ")
-        or target.startswith("from ")
-        or target.startswith("async ")
-        or target.startswith("const ")
-        or target.startswith("function ")
-        or len(target) > 4096
-    )
-
     # Handle PR diff
     if target.startswith("diff --git") or "index " in target[:100]:
         return await _review_diff(target, instruction)
 
-    # Handle inline code
-    if is_likely_code:
-        return await _review_code(target, instruction, focus)
+    # Try as filesystem path first for single-line, path-like inputs
+    # (prevents bypassing path validation by injecting newlines)
+    is_path_like = not ("\n" in target or len(target) > 4096) and not target.startswith("```")
+    if is_path_like:
+        try:
+            validated = _validate_path(target)
+            if isinstance(validated, str):
+                # validation returned an error message — only report if it looks like a path
+                if target.startswith(("/", ".", "~")) or ("/" in target and " " not in target):
+                    return {"error": validated}
+            else:
+                path = validated
+                if path.is_dir():
+                    if focus == "architecture":
+                        return await _explain_architecture(str(path), instruction)
+                    return await _analyze_directory(str(path), instruction, focus)
+                if path.is_file():
+                    return await _review_file(str(path), instruction, focus)
+        except OSError:
+            pass
 
-    # Try as path — with traversal protection
-    try:
-        validated = _validate_path(target)
-        if isinstance(validated, str):
-            # validation returned an error message
-            return {"error": validated}
-        path = validated
-        if path.is_dir():
-            if focus == "architecture":
-                return await _explain_architecture(str(path), instruction)
-            return await _analyze_directory(str(path), instruction, focus)
-        if path.is_file():
-            return await _review_file(str(path), instruction, focus)
-    except OSError:
-        pass
-
-    # Fallback: treat as code
+    # Fallback: treat as inline code
     return await _review_code(target, instruction, focus)
 
 
-async def _review_code(code: str, instruction: str, focus: str) -> str:
+async def _review_code(code: str, instruction: str, focus: str) -> dict | str:
     """Review inline code snippet."""
     prompt = f"""Review this code with focus on {focus}:
 
@@ -295,6 +282,10 @@ Provide:
 4. Suggestions (nice to have)
 
 Be specific with line references."""
+
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
 
     client = get_client()
     request = GeminiRequest(prompt=prompt, model=client.default_model)
@@ -422,6 +413,10 @@ Provide:
 4. Security implications
 5. Approval recommendation (APPROVE/REQUEST_CHANGES/COMMENT)"""
 
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
+
     client = get_client()
     request = GeminiRequest(prompt=prompt, model=client.default_model)
     response = await client.generate(request)
@@ -459,6 +454,11 @@ async def _analyze_directory(directory: str, instruction: str, focus: str) -> di
         if file_path.is_file() and not any(p in file_path.parts for p in exclude_dirs):
             if file_path.suffix in {".py", ".js", ".ts", ".go", ".rs", ".java", ".md"}:
                 try:
+                    # Check file size before reading to avoid loading huge files
+                    file_size = file_path.stat().st_size
+                    if file_size > max_size:
+                        logger.debug(f"Skipping large file {file_path}: {file_size:,} bytes")
+                        continue
                     content = file_path.read_text(encoding="utf-8")
                     if total_size + len(content) > max_size:
                         break
@@ -466,8 +466,8 @@ async def _analyze_directory(directory: str, instruction: str, focus: str) -> di
                         f"### {file_path.relative_to(path)}\n```\n{content[:10000]}\n```"
                     )
                     total_size += len(content)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Skipping file {file_path}: {e}")
 
     if not files_content:
         return {"error": "No analyzable files found in directory"}
@@ -532,6 +532,10 @@ Include:
 5. Technology choices
 6. Areas for improvement"""
 
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
+
     client = get_client()
     request = GeminiRequest(
         prompt=prompt, model=client.default_model, timeout=config.activity_timeout
@@ -591,6 +595,10 @@ Provide:
 
 Cite sources where possible."""
 
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
+
     client = get_client()
     request = GeminiRequest(prompt=prompt, model=client.default_model)
     response = await client.generate(request)
@@ -619,6 +627,10 @@ Structure your research:
 5. Best Practices
 6. Challenges & Considerations
 7. Resources & References"""
+
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
 
     client = get_client()
     request = GeminiRequest(
@@ -650,6 +662,10 @@ Provide:
 
 Use Google Scholar and academic sources."""
 
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
+
     client = get_client()
     request = GeminiRequest(
         prompt=prompt,
@@ -679,6 +695,10 @@ Provide:
 5. Gotchas and tips
 
 Search for official documentation and examples."""
+
+    token_err = _validate_prompt_tokens(prompt)
+    if token_err:
+        return {"error": token_err}
 
     client = get_client()
     request = GeminiRequest(prompt=prompt, model=client.default_model)

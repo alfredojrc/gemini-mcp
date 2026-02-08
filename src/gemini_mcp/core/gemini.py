@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import threading
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
@@ -186,6 +187,11 @@ class GeminiClient:
         model = request.model or self.default_model
         start_time = time.time()
 
+        if self.client is None:
+            raise GeminiAPIError(
+                "Gemini client not initialized. Check authentication configuration."
+            )
+
         try:
             # Configure generation
             gen_config = types.GenerateContentConfig(
@@ -206,6 +212,8 @@ class GeminiClient:
             elapsed = time.time() - start_time
             return self._parse_response(response, elapsed, model)
 
+        except GeminiAPIError:
+            raise
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
             if "401" in str(e) or "Unauthenticated" in str(e):
@@ -226,6 +234,11 @@ class GeminiClient:
         """
         model = request.model or self.default_model
         start_time = time.time()
+
+        if self.client is None:
+            raise GeminiAPIError(
+                "Gemini client not initialized. Check authentication configuration."
+            )
 
         try:
             gen_config = types.GenerateContentConfig(
@@ -312,13 +325,16 @@ class GeminiClient:
         ]
 
 
-# Global client instance
+# Global client instance (thread-safe via double-checked locking)
 _client: GeminiClient | None = None
+_client_lock = threading.Lock()
 
 
 def get_client() -> GeminiClient:
-    """Get or create the global Gemini client."""
+    """Get or create the global Gemini client (thread-safe)."""
     global _client
     if _client is None:
-        _client = GeminiClient()
+        with _client_lock:
+            if _client is None:
+                _client = GeminiClient()
     return _client

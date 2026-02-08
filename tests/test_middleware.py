@@ -43,30 +43,32 @@ class TestRateLimitMiddleware:
         assert limiter.tokens_per_second == pytest.approx(1.0)
 
     def test_get_client_ip_direct(self):
-        """Extract IP from direct connection."""
-        request = MagicMock()
-        request.headers = {}
-        request.client = MagicMock()
-        request.client.host = "192.168.1.1"
-
-        ip = RateLimitMiddleware._get_client_ip(request)
+        """Extract IP from direct connection via ASGI scope."""
+        scope = {
+            "type": "http",
+            "headers": [],
+            "client": ("192.168.1.1", 12345),
+        }
+        ip = RateLimitMiddleware._get_client_ip(scope)
         assert ip == "192.168.1.1"
 
     def test_get_client_ip_forwarded(self):
-        """Extract IP from X-Forwarded-For header."""
-        request = MagicMock()
-        request.headers = {"x-forwarded-for": "10.0.0.1, 10.0.0.2"}
-
-        ip = RateLimitMiddleware._get_client_ip(request)
+        """Extract IP from X-Forwarded-For header in ASGI scope."""
+        scope = {
+            "type": "http",
+            "headers": [(b"x-forwarded-for", b"10.0.0.1, 10.0.0.2")],
+            "client": ("127.0.0.1", 12345),
+        }
+        ip = RateLimitMiddleware._get_client_ip(scope)
         assert ip == "10.0.0.1"
 
     def test_get_client_ip_no_client(self):
-        """Handle missing client info."""
-        request = MagicMock()
-        request.headers = {}
-        request.client = None
-
-        ip = RateLimitMiddleware._get_client_ip(request)
+        """Handle missing client info in ASGI scope."""
+        scope = {
+            "type": "http",
+            "headers": [],
+        }
+        ip = RateLimitMiddleware._get_client_ip(scope)
         assert ip == "unknown"
 
 
