@@ -63,16 +63,10 @@ async def swarm_execute(
 
     response = {
         "trace_id": result.trace_id,
-        "status": (
-            result.status.value
-            if hasattr(result.status, "value")
-            else str(result.status)
-        ),
+        "status": (result.status.value if hasattr(result.status, "value") else str(result.status)),
         "result": result.result,
         "error": result.error,
-        "agents_used": [
-            a.value if hasattr(a, "value") else str(a) for a in result.agents_used
-        ],
+        "agents_used": [a.value if hasattr(a, "value") else str(a) for a in result.agents_used],
         "tasks_completed": result.tasks_completed,
         "elapsed_seconds": result.elapsed_seconds,
     }

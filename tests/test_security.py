@@ -118,9 +118,7 @@ class TestBinaryFileDetection:
     def test_text_extensions_not_blocked(self):
         """Text file extensions should not be blocked."""
         for ext in [".py", ".js", ".ts", ".md", ".txt", ".json", ".yaml"]:
-            assert (
-                ext not in _BINARY_EXTENSIONS
-            ), f"{ext} incorrectly in binary blocklist"
+            assert ext not in _BINARY_EXTENSIONS, f"{ext} incorrectly in binary blocklist"
 
 
 class TestPluginSandbox:

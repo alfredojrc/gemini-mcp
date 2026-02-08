@@ -284,11 +284,7 @@ def _parse_persona_file(path: Path) -> AgentDefinition | None:
 
     # Extract title (# heading)
     title_match = re.match(r"^#\s+(.+)", text.strip())
-    name = (
-        title_match.group(1).strip()
-        if title_match
-        else path.stem.replace("_", " ").title()
-    )
+    name = title_match.group(1).strip() if title_match else path.stem.replace("_", " ").title()
 
     # Extract sections
     sections: dict[str, str] = {}
@@ -324,9 +320,7 @@ def _parse_persona_file(path: Path) -> AgentDefinition | None:
 
     # Extract tools list
     tools_text = sections.get("tools", "")
-    tools = (
-        re.findall(r"-\s*(\w+)", tools_text) if tools_text else ["analyze", "complete"]
-    )
+    tools = re.findall(r"-\s*(\w+)", tools_text) if tools_text else ["analyze", "complete"]
 
     return AgentDefinition(
         agent_type=AgentType.ANALYST,  # custom personas use ANALYST as base type

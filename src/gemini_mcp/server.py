@@ -152,9 +152,7 @@ if config.enable_swarm:
             Mission results with execution trace
         """
         audit_event("tool_call", tool="swarm", mode=mode)
-        return await swarm_execute(
-            objective=objective, mode=mode, agents=agents, context=context
-        )
+        return await swarm_execute(objective=objective, mode=mode, agents=agents, context=context)
 
     @mcp.tool()
     async def adjudicate(
@@ -284,9 +282,7 @@ def load_plugins() -> None:
     # Optional allowlist — when set, only listed filenames are loaded.
     raw_allowlist = os.getenv("GEMINI_MCP_PLUGIN_ALLOWLIST", "").strip()
     allowlist: set[str] | None = (
-        {n.strip() for n in raw_allowlist.split(",") if n.strip()}
-        if raw_allowlist
-        else None
+        {n.strip() for n in raw_allowlist.split(",") if n.strip()} if raw_allowlist else None
     )
 
     for plugin_file in sorted(plugin_path.glob("*.py")):
@@ -300,9 +296,7 @@ def load_plugins() -> None:
 
         # --- Integrity gate ---
         if not _verify_plugin_hash(plugin_file):
-            logger.warning(
-                f"Plugin failed integrity check, skipping: {plugin_file.name}"
-            )
+            logger.warning(f"Plugin failed integrity check, skipping: {plugin_file.name}")
             continue
 
         try:
@@ -367,9 +361,7 @@ def _run_with_auth() -> None:
         )
 
     if config.max_request_size > 0:
-        middleware.append(
-            Middleware(RequestSizeLimitMiddleware, max_size=config.max_request_size)
-        )
+        middleware.append(Middleware(RequestSizeLimitMiddleware, max_size=config.max_request_size))
 
     # The SSE app manages its own lifecycle — no external lifespan needed.
     app = Starlette(
@@ -393,9 +385,7 @@ def _load_personas() -> None:
     registry = get_agent_registry()
     count = registry.load_personas_from_dir(personas_dir)
     if count:
-        logger.info(
-            f"Loaded {count} custom persona(s): {', '.join(registry.list_custom_agents())}"
-        )
+        logger.info(f"Loaded {count} custom persona(s): {', '.join(registry.list_custom_agents())}")
 
 
 def main() -> None:

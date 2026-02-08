@@ -91,9 +91,7 @@ class GeminiClient:
                         "Could not determine Project ID. OAuth may fail if Vertex AI is required."
                     )
             else:
-                logger.warning(
-                    "No authentication found. Set GOOGLE_API_KEY or run 'gemini login'"
-                )
+                logger.warning("No authentication found. Set GOOGLE_API_KEY or run 'gemini login'")
 
         # Initialize client
         try:
@@ -210,9 +208,7 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
             if "401" in str(e) or "Unauthenticated" in str(e):
-                logger.error(
-                    "Authentication failed. Run 'gemini login' or set GOOGLE_API_KEY"
-                )
+                logger.error("Authentication failed. Run 'gemini login' or set GOOGLE_API_KEY")
             raise GeminiAPIError(f"API request failed: {e}") from e
 
     async def stream(self, request: GeminiRequest) -> AsyncIterator[StreamEvent]:
@@ -281,9 +277,7 @@ class GeminiClient:
             )
             raise GeminiAPIError(f"Streaming failed: {e}") from e
 
-    def _parse_response(
-        self, response: Any, elapsed: float, model: str
-    ) -> GeminiResponse:
+    def _parse_response(self, response: Any, elapsed: float, model: str) -> GeminiResponse:
         """Parse API response into GeminiResponse."""
         try:
             text = response.text if hasattr(response, "text") else ""
@@ -292,9 +286,7 @@ class GeminiClient:
             usage = getattr(response, "usage_metadata", None)
             stats = GeminiStats(
                 prompt_tokens=getattr(usage, "prompt_token_count", 0) if usage else 0,
-                response_tokens=(
-                    getattr(usage, "candidates_token_count", 0) if usage else 0
-                ),
+                response_tokens=(getattr(usage, "candidates_token_count", 0) if usage else 0),
                 total_tokens=getattr(usage, "total_token_count", 0) if usage else 0,
                 duration_ms=int(elapsed * 1000),
             )

@@ -50,9 +50,7 @@ def audit_event(event: str, **fields) -> None:
     """Log a structured audit event (no-op if audit_log is disabled)."""
     if not config.audit_log:
         return
-    record = _audit_logger.makeRecord(
-        _audit_logger.name, logging.INFO, "", 0, event, (), None
-    )
+    record = _audit_logger.makeRecord(_audit_logger.name, logging.INFO, "", 0, event, (), None)
     record.audit_data = fields  # type: ignore[attr-defined]
     _audit_logger.handle(record)
 
@@ -88,9 +86,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.rate = rate  # requests per minute
         self.burst = burst
         self.tokens_per_second = rate / 60.0
-        self._buckets: dict[str, _TokenBucket] = defaultdict(
-            lambda: _TokenBucket(float(burst))
-        )
+        self._buckets: dict[str, _TokenBucket] = defaultdict(lambda: _TokenBucket(float(burst)))
 
     async def dispatch(self, request: Request, call_next) -> Response:
         if self.rate <= 0:
@@ -106,9 +102,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Refill tokens
         now = time.monotonic()
         elapsed = now - bucket.last_refill
-        bucket.tokens = min(
-            float(self.burst), bucket.tokens + elapsed * self.tokens_per_second
-        )
+        bucket.tokens = min(float(self.burst), bucket.tokens + elapsed * self.tokens_per_second)
         bucket.last_refill = now
 
         if bucket.tokens < 1.0:
@@ -165,10 +159,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > self.max_size:
             return JSONResponse(
-                {
-                    "error": f"Request body too large. "
-                    f"Maximum: {self.max_size:,} bytes"
-                },
+                {"error": f"Request body too large. " f"Maximum: {self.max_size:,} bytes"},
                 status_code=413,
             )
 

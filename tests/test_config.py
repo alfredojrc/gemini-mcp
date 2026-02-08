@@ -229,9 +229,7 @@ class TestAuthChain:
 
         monkeypatch.setenv("GOOGLE_API_KEY", "bad-key")
 
-        with patch(
-            "gemini_mcp.core.gemini.genai.Client", side_effect=Exception("Auth failed")
-        ):
+        with patch("gemini_mcp.core.gemini.genai.Client", side_effect=Exception("Auth failed")):
             from gemini_mcp.core.gemini import GeminiClient
 
             client = GeminiClient()

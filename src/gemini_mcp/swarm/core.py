@@ -80,9 +80,7 @@ class SwarmOrchestrator:
         try:
             if mode == ExecutionMode.ASYNC:
                 # Background execution — store result when done.
-                asyncio.create_task(
-                    self._run_and_persist(trace, context, progress_callback)
-                )
+                asyncio.create_task(self._run_and_persist(trace, context, progress_callback))
                 return SwarmResult(
                     trace_id=trace_id,
                     status=TaskStatus.IN_PROGRESS,
@@ -122,9 +120,7 @@ class SwarmOrchestrator:
         try:
             result = await self._run_mission(trace, context, progress_callback)
             # Result is already saved inside _run_mission, but log completion.
-            logger.info(
-                f"Background mission {trace.trace_id} completed: {result.status.value}"
-            )
+            logger.info(f"Background mission {trace.trace_id} completed: {result.status.value}")
         except Exception as e:
             logger.exception(f"Background mission {trace.trace_id} failed: {e}")
             trace.status = TaskStatus.FAILED
@@ -160,9 +156,7 @@ class SwarmOrchestrator:
                 turn += 1
                 elapsed = time.time() - start_time
                 if elapsed > timeout:
-                    logger.warning(
-                        f"Mission {trace.trace_id} timed out after {elapsed:.0f}s"
-                    )
+                    logger.warning(f"Mission {trace.trace_id} timed out after {elapsed:.0f}s")
                     break
 
                 if progress_callback:
@@ -238,9 +232,7 @@ class SwarmOrchestrator:
                                 agent_def = self.registry.get_by_name(agent_name)
                                 agent_type = agent_def.agent_type
                             else:
-                                logger.warning(
-                                    f"Unknown agent '{agent_name}', skipping delegation"
-                                )
+                                logger.warning(f"Unknown agent '{agent_name}', skipping delegation")
                                 continue
 
                         agents_used.add(agent_type)
@@ -435,9 +427,7 @@ class SwarmOrchestrator:
         for i, persona_name in enumerate(panel_personas):
             if progress_callback:
                 progress = (i + 1) / (len(panel_personas) + 1)
-                await progress_callback(
-                    progress, f"Expert {persona_name} deliberating..."
-                )
+                await progress_callback(progress, f"Expert {persona_name} deliberating...")
 
             try:
                 agent_type = AgentType(persona_name.lower())

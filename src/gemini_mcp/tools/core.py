@@ -220,9 +220,7 @@ Provide your analysis with clear reasoning steps."""
 async def analyze(
     target: str,
     instruction: str,
-    focus: Literal[
-        "general", "security", "performance", "architecture", "patterns"
-    ] = "general",
+    focus: Literal["general", "security", "performance", "architecture", "patterns"] = "general",
 ) -> dict | str:
     """
     Analyze code, files, or directories using Gemini's large context.

@@ -48,17 +48,13 @@ class TraceStore:
             "error": trace.error,
             "total_turns": trace.total_turns,
             "created_at": trace.created_at.isoformat(),
-            "completed_at": (
-                trace.completed_at.isoformat() if trace.completed_at else None
-            ),
+            "completed_at": (trace.completed_at.isoformat() if trace.completed_at else None),
         }
         try:
             with self._lock_for(trace_file):
                 trace_file.write_text(json.dumps(data, indent=2))
         except Timeout:
-            logger.warning(
-                f"Lock timeout writing trace {trace.trace_id}, writing without lock"
-            )
+            logger.warning(f"Lock timeout writing trace {trace.trace_id}, writing without lock")
             trace_file.write_text(json.dumps(data, indent=2))
 
         self._enforce_quota()

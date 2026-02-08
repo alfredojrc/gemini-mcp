@@ -79,9 +79,7 @@ class TestGeminiTool:
             mock_client.fast_model = "gemini-3-flash-preview"
             mock_get_client.return_value = mock_client
 
-            result = await gemini(
-                prompt="Question", mode="fast", context="Important context"
-            )
+            result = await gemini(prompt="Question", mode="fast", context="Important context")
             assert result == "Response with context"
 
             # Verify the context was passed in the prompt
@@ -166,9 +164,7 @@ class TestAnalyzeTool:
             mock_client.default_model = "gemini-3-pro-preview"
             mock_get_client.return_value = mock_client
 
-            result = await analyze(
-                target=diff, instruction="Review PR", focus="general"
-            )
+            result = await analyze(target=diff, instruction="Review PR", focus="general")
             assert isinstance(result, dict)
             assert "review" in result
 

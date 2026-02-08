@@ -18,9 +18,7 @@ class GeminiStats:
         """Create from dictionary."""
         return cls(
             prompt_tokens=data.get("prompt_tokens", data.get("promptTokenCount", 0)),
-            response_tokens=data.get(
-                "response_tokens", data.get("candidatesTokenCount", 0)
-            ),
+            response_tokens=data.get("response_tokens", data.get("candidatesTokenCount", 0)),
             total_tokens=data.get("total_tokens", data.get("totalTokenCount", 0)),
             duration_ms=data.get("duration_ms", 0),
         )

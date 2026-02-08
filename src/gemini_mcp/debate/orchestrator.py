@@ -207,9 +207,7 @@ class DebateMemory:
 
         result = "\n\n".join(summaries)
         if len(result) > max_tokens:
-            logger.warning(
-                f"Debate context truncated from {len(result)} to {max_tokens} chars"
-            )
+            logger.warning(f"Debate context truncated from {len(result)} to {max_tokens} chars")
         return result[:max_tokens]
 
 
@@ -409,10 +407,7 @@ class DebateOrchestrator:
             )
 
             # Check for convergence using config threshold
-            if (
-                round_num >= debate_cfg.min_rounds
-                and novelty < config.debate_novelty_threshold
-            ):
+            if round_num >= debate_cfg.min_rounds and novelty < config.debate_novelty_threshold:
                 break
 
         # Generate synthesis
@@ -468,7 +463,9 @@ Round: {round_num}
             for name, response in previous[-4:]:
                 prompt += f"\n{name}: {response[:500]}...\n"
 
-        prompt += f"\nProvide your perspective as {expert_name}. Be substantive and address key points."
+        prompt += (
+            f"\nProvide your perspective as {expert_name}. Be substantive and address key points."
+        )
 
         return prompt
 
@@ -504,8 +501,7 @@ Round: {round_num}
         current_vec = _tfidf_vector(current_text)
 
         prev_text = " ".join(
-            r.expert_a_response + " " + r.expert_b_response
-            for r in previous_rounds[-2:]
+            r.expert_a_response + " " + r.expert_b_response for r in previous_rounds[-2:]
         )
         prev_vec = _tfidf_vector(prev_text)
 
