@@ -1,7 +1,7 @@
 # Gemini MCP Server Dockerfile
 # Multi-stage build for minimal production image
 
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -25,8 +25,8 @@ RUN useradd -m -s /bin/bash app
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install runtime dependencies and apply security patches
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
