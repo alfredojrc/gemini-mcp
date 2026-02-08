@@ -4,7 +4,9 @@ import json
 import logging
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import UTC
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -47,7 +49,7 @@ def _setup_audit_logger() -> None:
     _audit_logger.propagate = False
 
 
-def audit_event(event: str, **fields) -> None:
+def audit_event(event: str, **fields: str) -> None:
     """Log a structured audit event (no-op if audit_log is disabled)."""
     if not config.audit_log:
         return
@@ -82,14 +84,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
       GEMINI_MCP_RATE_LIMIT_BURST — max burst capacity
     """
 
-    def __init__(self, app, rate: int = 0, burst: int = 20) -> None:
+    def __init__(self, app: Any, rate: int = 0, burst: int = 20) -> None:
         super().__init__(app)
         self.rate = rate  # requests per minute
         self.burst = burst
         self.tokens_per_second = rate / 60.0
         self._buckets: dict[str, _TokenBucket] = defaultdict(lambda: _TokenBucket(float(burst)))
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         if self.rate <= 0:
             return await call_next(request)
 
@@ -149,11 +151,11 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
     Configured via GEMINI_MCP_MAX_REQUEST_SIZE (bytes, 0 = unlimited).
     """
 
-    def __init__(self, app, max_size: int = 0) -> None:
+    def __init__(self, app: Any, max_size: int = 0) -> None:
         super().__init__(app)
         self.max_size = max_size
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         if self.max_size <= 0:
             return await call_next(request)
 

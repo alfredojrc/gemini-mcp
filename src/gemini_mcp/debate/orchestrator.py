@@ -7,7 +7,7 @@ import re
 import time
 import uuid
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -329,7 +329,7 @@ class DebateOrchestrator:
     async def start_debate(
         self,
         debate_cfg: DebateConfig,
-        progress_callback: Callable[[float, str], None] | None = None,
+        progress_callback: Callable[[float, str], Awaitable[None]] | None = None,
     ) -> DebateResult:
         """Start a new debate."""
         debate_id = str(uuid.uuid4())[:8]

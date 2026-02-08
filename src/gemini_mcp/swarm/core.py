@@ -6,12 +6,12 @@ import logging
 import re
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from ..config import config
 from ..core.gemini import GeminiRequest, get_client
-from .agents import get_agent_registry
+from .agents import AgentDefinition, get_agent_registry
 from .memory import (
     get_swarm_registry,
     get_trace_store,
@@ -60,7 +60,7 @@ class SwarmOrchestrator:
         mode: ExecutionMode = ExecutionMode.SYNC,
         agents: list[AgentType] | None = None,
         context: str = "",
-        progress_callback: Callable[[float, str], None] | None = None,
+        progress_callback: Callable[[float, str], Awaitable[None]] | None = None,
     ) -> SwarmResult:
         """Execute a multi-agent mission."""
         trace_id = str(uuid.uuid4())[:8]
@@ -113,7 +113,7 @@ class SwarmOrchestrator:
         self,
         trace: ExecutionTrace,
         context: str,
-        progress_callback: Callable[[float, str], None] | None,
+        progress_callback: Callable[[float, str], Awaitable[None]] | None,
     ) -> None:
         """Run mission in background and persist the result."""
         try:
@@ -136,7 +136,7 @@ class SwarmOrchestrator:
         self,
         trace: ExecutionTrace,
         context: str,
-        progress_callback: Callable[[float, str], None] | None = None,
+        progress_callback: Callable[[float, str], Awaitable[None]] | None = None,
     ) -> SwarmResult:
         """Execute the mission with architect-led delegation loop."""
         start_time = time.time()
@@ -381,7 +381,7 @@ class SwarmOrchestrator:
 
     async def _execute_agent(
         self,
-        agent_def: "AgentDefinition",  # noqa: F821
+        agent_def: AgentDefinition,
         task: str,
         mission_objective: str,
         context: str,
@@ -411,7 +411,7 @@ class SwarmOrchestrator:
         query: str,
         panel_personas: list[str] | None = None,
         strategy: AdjudicationStrategy = AdjudicationStrategy.SUPREME_COURT,
-        progress_callback: Callable[[float, str], None] | None = None,
+        progress_callback: Callable[[float, str], Awaitable[None]] | None = None,
     ) -> AdjudicationResult:
         """Convene an expert panel for consensus."""
         trace_id = str(uuid.uuid4())[:8]

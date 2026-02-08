@@ -82,7 +82,7 @@ async def gemini_query(
         AI response (text or dict with metadata)
     """
     audit_event("tool_call", tool="gemini", mode=mode, model=model or "default")
-    return await gemini(prompt=prompt, mode=mode, model=model, context=context)
+    return await gemini(prompt=prompt, mode=mode, model=model, context=context)  # type: ignore[arg-type]
 
 
 @mcp.tool()
@@ -103,7 +103,7 @@ async def analyze_code(
         Analysis results
     """
     audit_event("tool_call", tool="analyze", focus=focus)
-    return await analyze(target=target, instruction=instruction, focus=focus)
+    return await analyze(target=target, instruction=instruction, focus=focus)  # type: ignore[arg-type]
 
 
 @mcp.tool()
@@ -124,7 +124,7 @@ async def web_search(
         Search results with sources
     """
     audit_event("tool_call", tool="search", depth=depth)
-    return await search(query=query, depth=depth, topic_context=topic_context)
+    return await search(query=query, depth=depth, topic_context=topic_context)  # type: ignore[arg-type]
 
 
 # =============================================================================
@@ -153,7 +153,7 @@ if config.enable_swarm:
             Mission results with execution trace
         """
         audit_event("tool_call", tool="swarm", mode=mode)
-        return await swarm_execute(objective=objective, mode=mode, agents=agents, context=context)
+        return await swarm_execute(objective=objective, mode=mode, agents=agents, context=context)  # type: ignore[arg-type]
 
     @mcp.tool()
     async def adjudicate(
@@ -172,7 +172,7 @@ if config.enable_swarm:
         Returns:
             Panel verdict with reasoning
         """
-        return await swarm_adjudicate(query=query, panel=panel, strategy=strategy)
+        return await swarm_adjudicate(query=query, panel=panel, strategy=strategy)  # type: ignore[arg-type]
 
     @mcp.tool()
     async def swarm_check(
@@ -189,7 +189,7 @@ if config.enable_swarm:
         Returns:
             Status information
         """
-        return await swarm_status(trace_id=trace_id, action=action)
+        return await swarm_status(trace_id=trace_id, action=action)  # type: ignore[arg-type]
 
 
 # =============================================================================
@@ -222,7 +222,7 @@ if config.enable_debate:
         audit_event("tool_call", tool="debate", action=action, strategy=strategy)
         return await debate(
             topic=topic,
-            action=action,
+            action=action,  # type: ignore[arg-type]
             strategy=strategy,
             context=context,
             debate_id=debate_id,

@@ -119,7 +119,7 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Failed to initialize Gemini Client: {e}")
             # We don't raise here to allow the server to start, but requests will fail
-            self.client = None
+            self.client = None  # type: ignore[assignment]
 
     def _fetch_project_id(self, creds: Credentials) -> str | None:
         """Fetch the first available project ID using credentials."""
