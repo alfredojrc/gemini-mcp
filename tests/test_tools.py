@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from gemini_mcp.tools.core import gemini, analyze, search
+from gemini_mcp.tools.core import analyze, gemini, search
 
 
 class TestGeminiTool:

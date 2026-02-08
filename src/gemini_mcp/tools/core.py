@@ -13,7 +13,6 @@ from typing import Literal
 
 from ..config import config
 from ..core.gemini import GeminiRequest, get_client
-from ..core.response import GeminiResponse
 
 logger = logging.getLogger(__name__)
 

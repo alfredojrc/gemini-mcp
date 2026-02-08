@@ -4,16 +4,17 @@ import json
 import logging
 import os
 import time
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any
 
 from google import genai
 from google.genai import types
 from google.oauth2.credentials import Credentials
 
 from ..config import config
-from .exceptions import GeminiAPIError, GeminiParseError, GeminiTimeoutError
+from .exceptions import GeminiAPIError, GeminiParseError
 from .response import GeminiResponse, GeminiStats
 
 logger = logging.getLogger(__name__)

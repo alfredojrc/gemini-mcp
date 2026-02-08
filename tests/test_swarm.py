@@ -1,10 +1,9 @@
 """Tests for the swarm orchestrator."""
 
 import pytest
-from datetime import datetime
 
 from gemini_mcp.swarm.core import SwarmOrchestrator
-from gemini_mcp.swarm.memory import TraceStore, SwarmRegistry, AsyncBlackboard
+from gemini_mcp.swarm.memory import AsyncBlackboard, SwarmRegistry, TraceStore
 from gemini_mcp.swarm.types import (
     AgentType,
     ExecutionTrace,

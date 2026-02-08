@@ -1,5 +1,5 @@
 """Tools for Gemini MCP Server."""
 
-from .core import gemini, analyze, search
+from .core import analyze, gemini, search
 
 __all__ = ["gemini", "analyze", "search"]

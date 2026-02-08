@@ -3,8 +3,6 @@
 import logging
 from typing import Literal
 
-from ..config import config
-
 logger = logging.getLogger(__name__)
 
 
@@ -139,7 +137,7 @@ async def swarm_status(
         Status information
     """
     from ..swarm.core import SwarmOrchestrator
-    from ..swarm.memory import get_trace_store, get_swarm_registry
+    from ..swarm.memory import get_swarm_registry, get_trace_store
 
     orchestrator = SwarmOrchestrator()
     store = get_trace_store()

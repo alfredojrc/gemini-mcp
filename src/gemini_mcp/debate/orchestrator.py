@@ -7,11 +7,10 @@ import re
 import time
 import uuid
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from typing import Callable
+from enum import StrEnum
 
 from ..config import config
 from ..core.gemini import GeminiRequest, get_client
@@ -19,7 +18,7 @@ from ..core.gemini import GeminiRequest, get_client
 logger = logging.getLogger(__name__)
 
 
-class DebateStrategy(str, Enum):
+class DebateStrategy(StrEnum):
     """Debate strategies."""
 
     COLLABORATIVE = "collaborative"
@@ -218,7 +217,7 @@ class DebateMemory:
 
 def _tokenize(text: str) -> list[str]:
     """Simple whitespace + lowercase tokenizer with stopword removal."""
-    _STOPWORDS = frozenset(
+    stopwords = frozenset(
         {
             "the",
             "a",
@@ -288,7 +287,7 @@ def _tokenize(text: str) -> list[str]:
         }
     )
     words = re.findall(r"[a-z0-9]+", text.lower())
-    return [w for w in words if w not in _STOPWORDS and len(w) > 1]
+    return [w for w in words if w not in stopwords and len(w) > 1]
 
 
 def _tfidf_vector(text: str) -> dict[str, float]:

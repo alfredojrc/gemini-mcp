@@ -6,6 +6,7 @@ This module defines the MCP server and registers all available tools.
 import hashlib
 import logging
 import os
+from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
@@ -53,12 +54,12 @@ def ping() -> str:
 # =============================================================================
 # Audit Logging (opt-in via GEMINI_MCP_AUDIT_LOG=true)
 # =============================================================================
-from .middleware import audit_event
+from .middleware import audit_event  # noqa: E402
 
 # =============================================================================
 # Core Tools - Always Available
 # =============================================================================
-from .tools.core import gemini, analyze, search
+from .tools.core import analyze, gemini, search  # noqa: E402
 
 
 @mcp.tool()
@@ -130,7 +131,7 @@ async def web_search(
 # Swarm Tools - Optional
 # =============================================================================
 if config.enable_swarm:
-    from .tools.swarm_tools import swarm_execute, swarm_adjudicate, swarm_status
+    from .tools.swarm_tools import swarm_adjudicate, swarm_execute, swarm_status
 
     @mcp.tool()
     async def swarm(
@@ -239,14 +240,13 @@ if config.enable_debate:
 # for each plugin to enable integrity verification.  The sidecar must contain
 # the hex SHA-256 of the plugin file (e.g. `sha256sum my_plugin.py > my_plugin.py.sha256`).
 # =============================================================================
-def _verify_plugin_hash(plugin_file: "Path") -> bool:
+def _verify_plugin_hash(plugin_file: Path) -> bool:
     """Return True if the plugin passes SHA-256 integrity check.
 
     If hash verification is not enabled (GEMINI_MCP_PLUGIN_REQUIRE_HASH != true),
     this always returns True.  When enabled, the plugin must have a matching
     .sha256 sidecar file.
     """
-    from pathlib import Path
 
     if os.getenv("GEMINI_MCP_PLUGIN_REQUIRE_HASH", "").lower() != "true":
         return True
@@ -269,7 +269,6 @@ def _verify_plugin_hash(plugin_file: "Path") -> bool:
 
 def load_plugins() -> None:
     """Load plugins from the plugin directory with safety checks."""
-    from pathlib import Path
     import importlib.util
 
     plugin_dir = os.getenv("PLUGIN_DIR", str(config.data_dir / "plugins"))
@@ -400,12 +399,12 @@ def main() -> None:
     logger.info(f"Swarm enabled: {config.enable_swarm}")
     logger.info(f"Debate enabled: {config.enable_debate}")
 
-    _VALID_TRANSPORTS = {"stdio", "sse", "streamable-http"}
+    valid_transports = {"stdio", "sse", "streamable-http"}
     transport = config.transport
-    if transport not in _VALID_TRANSPORTS:
+    if transport not in valid_transports:
         logger.warning(
             f"Unknown transport '{transport}', falling back to 'sse'. "
-            f"Valid options: {', '.join(sorted(_VALID_TRANSPORTS))}"
+            f"Valid options: {', '.join(sorted(valid_transports))}"
         )
         transport = "sse"
 

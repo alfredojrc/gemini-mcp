@@ -1,7 +1,6 @@
 """Response types for Gemini MCP Server."""
 
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass

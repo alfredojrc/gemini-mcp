@@ -1,7 +1,7 @@
 """Tests for middleware: rate limiting, request size limits, audit logging."""
 
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -97,7 +97,7 @@ class TestAuditEvent:
         """audit_event should log when audit_log is True."""
         monkeypatch.setattr("gemini_mcp.middleware.config.audit_log", True)
 
-        from gemini_mcp.middleware import _setup_audit_logger, _audit_logger
+        from gemini_mcp.middleware import _audit_logger, _setup_audit_logger
 
         _setup_audit_logger()
 

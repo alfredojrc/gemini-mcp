@@ -4,10 +4,11 @@ import json
 import logging
 import time
 from collections import defaultdict
+from datetime import UTC
 
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import config
 
@@ -28,10 +29,10 @@ def _setup_audit_logger() -> None:
 
     class _JSONFormatter(logging.Formatter):
         def format(self, record: logging.LogRecord) -> str:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             entry: dict = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "level": record.levelname,
                 "event": record.getMessage(),
             }

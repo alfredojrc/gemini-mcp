@@ -2,11 +2,10 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from typing import Any
+from enum import StrEnum
 
 
-class AgentType(str, Enum):
+class AgentType(StrEnum):
     """Available agent types."""
 
     ARCHITECT = "architect"
@@ -18,14 +17,14 @@ class AgentType(str, Enum):
     DOCUMENTER = "documenter"
 
 
-class ExecutionMode(str, Enum):
+class ExecutionMode(StrEnum):
     """Swarm execution modes."""
 
     SYNC = "sync"  # Synchronous execution
     ASYNC = "async"  # Asynchronous (fire-and-forget)
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     """Task status values."""
 
     PENDING = "pending"
@@ -35,7 +34,7 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class AdjudicationStrategy(str, Enum):
+class AdjudicationStrategy(StrEnum):
     """Strategies for reaching consensus."""
 
     UNANIMOUS = "unanimous"  # All must agree

@@ -1,14 +1,10 @@
 """Tests for the debate orchestrator."""
 
-import json
-
 import pytest
 
 from gemini_mcp.debate.orchestrator import (
-    DebateConfig,
     DebateMemory,
     DebateResult,
-    DebateRound,
     DebateStrategy,
     _cosine_similarity,
     _tfidf_vector,

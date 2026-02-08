@@ -6,21 +6,20 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable
 
 from ..config import config
 from ..core.gemini import GeminiRequest, get_client
 from .agents import get_agent_registry
 from .memory import (
-    AsyncBlackboard,
     get_swarm_registry,
     get_trace_store,
 )
 from .types import (
-    AgentType,
     AdjudicationResult,
     AdjudicationStrategy,
+    AgentType,
     ExecutionMode,
     ExecutionTrace,
     PanelVote,
@@ -142,7 +141,6 @@ class SwarmOrchestrator:
         """Execute the mission with architect-led delegation loop."""
         start_time = time.time()
         timeout = config.activity_timeout  # hard timeout for the whole mission
-        blackboard = AsyncBlackboard()
         turn = 0
         max_turns = min(_MAX_TURNS, self.max_depth * 4)  # bounded by config depth
         agent_results: dict[str, str] = {}  # agent_type -> result
