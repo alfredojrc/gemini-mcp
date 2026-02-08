@@ -1,12 +1,17 @@
 """Agent definitions and registry for the Swarm system."""
 
 import logging
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable
 
 from .types import AgentType
 
 logger = logging.getLogger(__name__)
+
+# Sections we expect in persona markdown files
+_PERSONA_SECTIONS = {"role", "expertise", "capabilities", "tools", "guidelines"}
 
 
 @dataclass
@@ -186,6 +191,7 @@ class AgentRegistry:
 
     def __init__(self) -> None:
         self._agents: dict[AgentType, AgentDefinition] = {}
+        self._custom_agents: dict[str, AgentDefinition] = {}  # name -> definition
         self._register_defaults()
 
     def _register_defaults(self) -> None:
@@ -208,20 +214,120 @@ class AgentRegistry:
         return self._agents[agent_type]
 
     def get_by_name(self, name: str) -> AgentDefinition:
-        """Get agent definition by name."""
+        """Get agent definition by name (checks custom personas first)."""
+        key = name.lower().replace("-", "_").replace(" ", "_")
+        if key in self._custom_agents:
+            return self._custom_agents[key]
         for agent in self._agents.values():
             if agent.name.lower() == name.lower():
                 return agent
         raise ValueError(f"Unknown agent: {name}")
+
+    def has_custom(self, name: str) -> bool:
+        """Check if a custom persona is registered."""
+        return name.lower().replace("-", "_").replace(" ", "_") in self._custom_agents
 
     def register(self, agent: AgentDefinition) -> None:
         """Register a custom agent."""
         self._agents[agent.agent_type] = agent
         logger.info(f"Registered agent: {agent.name}")
 
+    def register_custom(self, name: str, agent: AgentDefinition) -> None:
+        """Register a custom persona agent by name."""
+        key = name.lower().replace("-", "_").replace(" ", "_")
+        self._custom_agents[key] = agent
+        logger.info(f"Registered custom persona: {name}")
+
     def list_agents(self) -> list[str]:
-        """List all available agent names."""
-        return [a.name for a in self._agents.values()]
+        """List all available agent names (built-in + custom)."""
+        names = [a.name for a in self._agents.values()]
+        names.extend(a.name for a in self._custom_agents.values())
+        return names
+
+    def list_custom_agents(self) -> list[str]:
+        """List custom persona agent names."""
+        return [a.name for a in self._custom_agents.values()]
+
+    def load_personas_from_dir(self, personas_dir: str | Path) -> int:
+        """Load custom persona definitions from a directory of Markdown files.
+
+        Returns the number of personas successfully loaded.
+        """
+        personas_path = Path(personas_dir)
+        if not personas_path.is_dir():
+            logger.debug(f"Personas directory not found: {personas_path}")
+            return 0
+
+        loaded = 0
+        for md_file in sorted(personas_path.glob("*.md")):
+            if md_file.name.lower() == "readme.md":
+                continue
+            try:
+                agent = _parse_persona_file(md_file)
+                if agent:
+                    self.register_custom(md_file.stem, agent)
+                    loaded += 1
+            except Exception as e:
+                logger.warning(f"Failed to load persona {md_file.name}: {e}")
+
+        if loaded:
+            logger.info(f"Loaded {loaded} custom persona(s) from {personas_path}")
+        return loaded
+
+
+def _parse_persona_file(path: Path) -> AgentDefinition | None:
+    """Parse a persona Markdown file into an AgentDefinition."""
+    text = path.read_text(encoding="utf-8")
+    if not text.strip():
+        return None
+
+    # Extract title (# heading)
+    title_match = re.match(r"^#\s+(.+)", text.strip())
+    name = title_match.group(1).strip() if title_match else path.stem.replace("_", " ").title()
+
+    # Extract sections
+    sections: dict[str, str] = {}
+    current_section: str | None = None
+    current_lines: list[str] = []
+
+    for line in text.split("\n"):
+        heading = re.match(r"^##\s+(.+)", line)
+        if heading:
+            if current_section:
+                sections[current_section] = "\n".join(current_lines).strip()
+            current_section = heading.group(1).strip().lower()
+            current_lines = []
+        elif current_section is not None:
+            current_lines.append(line)
+
+    if current_section:
+        sections[current_section] = "\n".join(current_lines).strip()
+
+    # Build system prompt from all sections
+    role = sections.get("role", "Specialist agent")
+    expertise = sections.get("expertise", "")
+    capabilities = sections.get("capabilities", "")
+    guidelines = sections.get("guidelines", "")
+
+    prompt_parts = [f"You are a {name}.\n\n{role}"]
+    if expertise:
+        prompt_parts.append(f"Expertise:\n{expertise}")
+    if capabilities:
+        prompt_parts.append(f"Capabilities:\n{capabilities}")
+    if guidelines:
+        prompt_parts.append(f"Guidelines:\n{guidelines}")
+
+    # Extract tools list
+    tools_text = sections.get("tools", "")
+    tools = re.findall(r"-\s*(\w+)", tools_text) if tools_text else ["analyze", "complete"]
+
+    return AgentDefinition(
+        agent_type=AgentType.ANALYST,  # custom personas use ANALYST as base type
+        name=name,
+        role=role,
+        system_prompt="\n\n".join(prompt_parts),
+        tools=tools,
+    )
 
 
 # Global registry instance

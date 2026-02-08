@@ -17,6 +17,9 @@ class TestSwarmParsing:
 
     def setup_method(self):
         self.orch = SwarmOrchestrator.__new__(SwarmOrchestrator)
+        # Provide a minimal registry for prompt-building tests
+        from gemini_mcp.swarm.agents import AgentRegistry
+        self.orch.registry = AgentRegistry()
 
     def test_parse_single_delegation(self):
         """Parse a single delegate() call."""
@@ -73,7 +76,7 @@ class TestSwarmParsing:
 
     def test_build_architect_prompt_basic(self):
         """Build a basic architect prompt."""
-        prompt = SwarmOrchestrator._build_architect_prompt(
+        prompt = self.orch._build_architect_prompt(
             objective="Design an API",
             context="",
             agent_results={},
@@ -87,7 +90,7 @@ class TestSwarmParsing:
 
     def test_build_architect_prompt_with_results(self):
         """Build prompt including prior agent results."""
-        prompt = SwarmOrchestrator._build_architect_prompt(
+        prompt = self.orch._build_architect_prompt(
             objective="Build a feature",
             context="Use Python",
             agent_results={"researcher": "Found 3 relevant papers"},
@@ -97,6 +100,66 @@ class TestSwarmParsing:
         assert "researcher" in prompt
         assert "Found 3 relevant papers" in prompt
         assert "Use Python" in prompt
+
+
+class TestPersonaLoader:
+    """Tests for custom persona loading from markdown files."""
+
+    def test_load_persona_from_file(self, tmp_path):
+        """Load a persona from a markdown file."""
+        from gemini_mcp.swarm.agents import AgentRegistry
+
+        persona_file = tmp_path / "test_expert.md"
+        persona_file.write_text(
+            "# Test Expert\n\n"
+            "## Role\nA test specialist.\n\n"
+            "## Expertise\n- Testing\n- Validation\n\n"
+            "## Tools\n- analyze\n- search\n- complete\n\n"
+            "## Guidelines\n1. Be thorough\n"
+        )
+
+        registry = AgentRegistry()
+        count = registry.load_personas_from_dir(tmp_path)
+        assert count == 1
+        assert registry.has_custom("test_expert")
+
+        agent = registry.get_by_name("test_expert")
+        assert agent.name == "Test Expert"
+        assert "test specialist" in agent.system_prompt
+        assert "analyze" in agent.tools
+
+    def test_load_skips_readme(self, tmp_path):
+        """README.md should be skipped."""
+        from gemini_mcp.swarm.agents import AgentRegistry
+
+        (tmp_path / "README.md").write_text("# Not a persona")
+        registry = AgentRegistry()
+        count = registry.load_personas_from_dir(tmp_path)
+        assert count == 0
+
+    def test_load_nonexistent_dir(self):
+        """Non-existent directory returns 0."""
+        from gemini_mcp.swarm.agents import AgentRegistry
+
+        registry = AgentRegistry()
+        count = registry.load_personas_from_dir("/nonexistent/path")
+        assert count == 0
+
+    def test_custom_personas_listed_in_prompt(self, tmp_path):
+        """Custom personas should appear in the architect prompt."""
+        from gemini_mcp.swarm.agents import AgentRegistry
+
+        persona_file = tmp_path / "my_specialist.md"
+        persona_file.write_text("# My Specialist\n\n## Role\nDoes stuff.\n")
+
+        registry = AgentRegistry()
+        registry.load_personas_from_dir(tmp_path)
+
+        # Verify the custom agent shows up in list
+        all_agents = registry.list_agents()
+        assert "My Specialist" in all_agents
+        custom = registry.list_custom_agents()
+        assert "My Specialist" in custom
 
 
 class TestTraceStore:

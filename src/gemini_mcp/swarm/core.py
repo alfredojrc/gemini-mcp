@@ -216,14 +216,22 @@ class SwarmOrchestrator:
                 if delegations:
                     # Execute delegations (up to max_depth concurrent)
                     for agent_name, task_desc in delegations[: self.max_depth]:
+                        # Try built-in agent types first, then custom personas
+                        agent_def = None
+                        agent_type = None
                         try:
                             agent_type = AgentType(agent_name.lower())
+                            agent_def = self.registry.get(agent_type)
                         except ValueError:
-                            logger.warning(f"Unknown agent '{agent_name}', skipping delegation")
-                            continue
+                            # Check custom personas
+                            if self.registry.has_custom(agent_name):
+                                agent_def = self.registry.get_by_name(agent_name)
+                                agent_type = agent_def.agent_type
+                            else:
+                                logger.warning(f"Unknown agent '{agent_name}', skipping delegation")
+                                continue
 
                         agents_used.add(agent_type)
-                        agent_def = self.registry.get(agent_type)
                         sub_result = await self._execute_agent(
                             agent_def, task_desc, trace.objective, context,
                         )
@@ -296,8 +304,8 @@ class SwarmOrchestrator:
     # Prompt building
     # ------------------------------------------------------------------
 
-    @staticmethod
     def _build_architect_prompt(
+        self,
         objective: str,
         context: str,
         agent_results: dict[str, str],
@@ -318,11 +326,21 @@ class SwarmOrchestrator:
             parts.append("--- End of agent results ---\n")
 
         parts.append(f"Turn {turn}/{max_turns}.")
+
+        # Build available agents list including custom personas
+        builtin = "researcher, coder, analyst, reviewer, tester, documenter"
+        custom_names = self.registry.list_custom_agents()
+        if custom_names:
+            custom_list = ", ".join(n.lower().replace(" ", "_") for n in custom_names)
+            agents_line = f"Available agents: {builtin}, {custom_list}"
+        else:
+            agents_line = f"Available agents: {builtin}"
+
         parts.append(
             "Actions:\n"
             "  delegate(agent_name, task_description) — assign work to a specialist\n"
             "  complete(final_result) — finish the mission with your answer\n\n"
-            "Available agents: researcher, coder, analyst, reviewer, tester, documenter\n\n"
+            f"{agents_line}\n\n"
             "If you can answer directly, use complete(your_answer). "
             "Otherwise delegate sub-tasks, then integrate results on the next turn."
         )

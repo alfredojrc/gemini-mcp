@@ -375,10 +375,26 @@ def _run_with_auth() -> None:
     uvicorn.run(app, host=config.server_host, port=config.server_port)
 
 
+def _load_personas() -> None:
+    """Load custom persona definitions from the personas directory."""
+    from .swarm.agents import get_agent_registry
+
+    personas_dir = Path(__file__).resolve().parent.parent.parent / "personas"
+    env_dir = os.getenv("GEMINI_MCP_PERSONAS_DIR")
+    if env_dir:
+        personas_dir = Path(env_dir)
+
+    registry = get_agent_registry()
+    count = registry.load_personas_from_dir(personas_dir)
+    if count:
+        logger.info(f"Loaded {count} custom persona(s): {', '.join(registry.list_custom_agents())}")
+
+
 def main() -> None:
     """Run the Gemini MCP server."""
-    # Load plugins
+    # Load plugins and personas
     load_plugins()
+    _load_personas()
 
     # Log startup info
     logger.info(f"Starting {config.server_name} v1.0.0")
