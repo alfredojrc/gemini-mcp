@@ -98,6 +98,7 @@ class TestAuditEvent:
         monkeypatch.setattr("gemini_mcp.middleware.config.audit_log", True)
 
         from gemini_mcp.middleware import _setup_audit_logger, _audit_logger
+
         _setup_audit_logger()
 
         with patch.object(_audit_logger, "handle") as mock_handle:

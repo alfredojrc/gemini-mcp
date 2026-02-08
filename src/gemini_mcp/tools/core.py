@@ -47,16 +47,26 @@ def _validate_prompt_tokens(prompt: str, model: str | None = None) -> str | None
         )
     return None
 
+
 # ---------------------------------------------------------------------------
 # Path validation — prevent directory traversal outside allowed roots.
 # Set GEMINI_MCP_ALLOWED_PATHS to a colon-separated list of base directories
 # (e.g. "/home/app/projects:/tmp/analysis").
 # When unset, defaults to CWD + /tmp.
 # ---------------------------------------------------------------------------
-_SENSITIVE_PATHS = frozenset({
-    "/etc", "/var", "/root", "/proc", "/sys", "/dev",
-    "/boot", "/sbin", "/usr/sbin",
-})
+_SENSITIVE_PATHS = frozenset(
+    {
+        "/etc",
+        "/var",
+        "/root",
+        "/proc",
+        "/sys",
+        "/dev",
+        "/boot",
+        "/sbin",
+        "/usr/sbin",
+    }
+)
 
 
 def _get_allowed_roots() -> list[Path]:
@@ -295,15 +305,60 @@ Be specific with line references."""
     return response.text
 
 
-_BINARY_EXTENSIONS = frozenset({
-    ".exe", ".dll", ".so", ".dylib", ".bin", ".dat", ".db", ".sqlite",
-    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg",
-    ".mp3", ".mp4", ".avi", ".mov", ".wav", ".flac", ".ogg",
-    ".zip", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar",
-    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-    ".pyc", ".pyo", ".class", ".o", ".a", ".whl", ".egg",
-    ".wasm", ".ttf", ".otf", ".woff", ".woff2", ".eot",
-})
+_BINARY_EXTENSIONS = frozenset(
+    {
+        ".exe",
+        ".dll",
+        ".so",
+        ".dylib",
+        ".bin",
+        ".dat",
+        ".db",
+        ".sqlite",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".ico",
+        ".webp",
+        ".svg",
+        ".mp3",
+        ".mp4",
+        ".avi",
+        ".mov",
+        ".wav",
+        ".flac",
+        ".ogg",
+        ".zip",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".xz",
+        ".7z",
+        ".rar",
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+        ".pyc",
+        ".pyo",
+        ".class",
+        ".o",
+        ".a",
+        ".whl",
+        ".egg",
+        ".wasm",
+        ".ttf",
+        ".otf",
+        ".woff",
+        ".woff2",
+        ".eot",
+    }
+)
 
 
 async def _review_file(file_path: str, instruction: str, focus: str) -> dict:
@@ -404,9 +459,7 @@ async def _analyze_directory(directory: str, instruction: str, focus: str) -> di
     max_size = 500000  # 500KB limit
 
     for file_path in path.rglob("*"):
-        if file_path.is_file() and not any(
-            p in file_path.parts for p in exclude_dirs
-        ):
+        if file_path.is_file() and not any(p in file_path.parts for p in exclude_dirs):
             if file_path.suffix in {".py", ".js", ".ts", ".go", ".rs", ".java", ".md"}:
                 try:
                     content = file_path.read_text(encoding="utf-8")

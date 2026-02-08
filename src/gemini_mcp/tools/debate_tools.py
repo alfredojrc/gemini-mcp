@@ -87,7 +87,9 @@ async def debate(
         return {"action": "load", "error": "Debate not found"}
 
     if action == "context":
-        context_summary = orchestrator.memory.get_context_summary(topic, max_tokens=2000)
+        context_summary = orchestrator.memory.get_context_summary(
+            topic, max_tokens=2000
+        )
         return {
             "action": "context",
             "topic": topic,

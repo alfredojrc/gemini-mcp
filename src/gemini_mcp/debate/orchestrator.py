@@ -164,12 +164,14 @@ class DebateMemory:
                 debate_tfidf = _tfidf_vector(data["topic"])
                 score = _cosine_similarity(topic_tfidf, debate_tfidf)
                 if score > 0.1:
-                    related.append(RelatedDebate(
-                        debate_id=data["debate_id"],
-                        topic=data["topic"],
-                        relevance_score=score,
-                        key_insights=data.get("consensus", [])[:3],
-                    ))
+                    related.append(
+                        RelatedDebate(
+                            debate_id=data["debate_id"],
+                            topic=data["topic"],
+                            relevance_score=score,
+                            key_insights=data.get("consensus", [])[:3],
+                        )
+                    )
             except Exception:
                 pass
 
@@ -215,18 +217,79 @@ class DebateMemory:
 # TF-IDF helpers for novelty & relevance (lightweight, no dependencies)
 # ---------------------------------------------------------------------------
 
+
 def _tokenize(text: str) -> list[str]:
     """Simple whitespace + lowercase tokenizer with stopword removal."""
-    _STOPWORDS = frozenset({
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "shall", "can", "to", "of", "in", "for",
-        "on", "with", "at", "by", "from", "as", "into", "through", "and",
-        "but", "or", "nor", "not", "so", "yet", "both", "either", "neither",
-        "it", "its", "this", "that", "these", "those", "i", "you", "he",
-        "she", "we", "they", "me", "him", "her", "us", "them", "my", "your",
-    })
-    words = re.findall(r'[a-z0-9]+', text.lower())
+    _STOPWORDS = frozenset(
+        {
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "shall",
+            "can",
+            "to",
+            "of",
+            "in",
+            "for",
+            "on",
+            "with",
+            "at",
+            "by",
+            "from",
+            "as",
+            "into",
+            "through",
+            "and",
+            "but",
+            "or",
+            "nor",
+            "not",
+            "so",
+            "yet",
+            "both",
+            "either",
+            "neither",
+            "it",
+            "its",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+        }
+    )
+    words = re.findall(r"[a-z0-9]+", text.lower())
     return [w for w in words if w not in _STOPWORDS and len(w) > 1]
 
 
@@ -301,8 +364,13 @@ class DebateOrchestrator:
 
             # Expert A — default/pro model, lower temperature
             expert_a_prompt = self._build_expert_prompt(
-                "Expert A", debate_cfg.topic, strategy_instruction,
-                context, debate_cfg.context, previous_responses, round_num,
+                "Expert A",
+                debate_cfg.topic,
+                strategy_instruction,
+                context,
+                debate_cfg.context,
+                previous_responses,
+                round_num,
             )
             response_a = await self._get_expert_response(
                 expert_a_prompt,
@@ -313,8 +381,13 @@ class DebateOrchestrator:
             # Expert B — fast/flash model, higher temperature
             previous_responses.append(("Expert A", response_a))
             expert_b_prompt = self._build_expert_prompt(
-                "Expert B", debate_cfg.topic, strategy_instruction,
-                context, debate_cfg.context, previous_responses, round_num,
+                "Expert B",
+                debate_cfg.topic,
+                strategy_instruction,
+                context,
+                debate_cfg.context,
+                previous_responses,
+                round_num,
             )
             response_b = await self._get_expert_response(
                 expert_b_prompt,
@@ -326,15 +399,20 @@ class DebateOrchestrator:
             # Calculate novelty using TF-IDF cosine similarity
             novelty = self._calculate_novelty(response_a, response_b, rounds)
 
-            rounds.append(DebateRound(
-                round_number=round_num,
-                expert_a_response=response_a,
-                expert_b_response=response_b,
-                novelty_score=novelty,
-            ))
+            rounds.append(
+                DebateRound(
+                    round_number=round_num,
+                    expert_a_response=response_a,
+                    expert_b_response=response_b,
+                    novelty_score=novelty,
+                )
+            )
 
             # Check for convergence using config threshold
-            if round_num >= debate_cfg.min_rounds and novelty < config.debate_novelty_threshold:
+            if (
+                round_num >= debate_cfg.min_rounds
+                and novelty < config.debate_novelty_threshold
+            ):
                 break
 
         # Generate synthesis
@@ -395,7 +473,10 @@ Round: {round_num}
         return prompt
 
     async def _get_expert_response(
-        self, prompt: str, model: str | None = None, temperature: float = 0.8,
+        self,
+        prompt: str,
+        model: str | None = None,
+        temperature: float = 0.8,
     ) -> str:
         """Get response from an expert using a specific model/temperature."""
         request = GeminiRequest(
@@ -432,16 +513,16 @@ Round: {round_num}
         # Novelty = 1 - similarity (high similarity = low novelty = convergence)
         return max(0.0, min(1.0, 1.0 - similarity))
 
-    async def _generate_synthesis(
-        self, topic: str, rounds: list[DebateRound]
-    ) -> dict:
+    async def _generate_synthesis(self, topic: str, rounds: list[DebateRound]) -> dict:
         """Generate final synthesis of the debate."""
-        rounds_summary = "\n".join([
-            f"Round {r.round_number}:\n"
-            f"  Expert A: {r.expert_a_response[:300]}...\n"
-            f"  Expert B: {r.expert_b_response[:300]}..."
-            for r in rounds
-        ])
+        rounds_summary = "\n".join(
+            [
+                f"Round {r.round_number}:\n"
+                f"  Expert A: {r.expert_a_response[:300]}...\n"
+                f"  Expert B: {r.expert_b_response[:300]}..."
+                for r in rounds
+            ]
+        )
 
         prompt = f"""Synthesize this debate on: {topic}
 
@@ -467,8 +548,8 @@ Respond with ONLY a JSON object (no markdown fences):
         # Strip markdown code fences if present
         text = response.text.strip()
         if text.startswith("```"):
-            text = re.sub(r'^```(?:json)?\s*', '', text)
-            text = re.sub(r'\s*```$', '', text)
+            text = re.sub(r"^```(?:json)?\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
             try:
                 return json.loads(text)
             except json.JSONDecodeError:
@@ -520,7 +601,7 @@ Respond with ONLY a JSON object (no markdown fences):
                 depth -= 1
                 if depth == 0:
                     try:
-                        return json.loads(text[start:i + 1])
+                        return json.loads(text[start : i + 1])
                     except json.JSONDecodeError:
                         return None
         return None

@@ -46,7 +46,10 @@ class TestGeminiTool:
             mock_client = MagicMock()
             mock_response = MagicMock()
             mock_response.text = "Deep analysis"
-            mock_response.to_dict.return_value = {"text": "Deep analysis", "model": "pro"}
+            mock_response.to_dict.return_value = {
+                "text": "Deep analysis",
+                "model": "pro",
+            }
             mock_client.generate = AsyncMock(return_value=mock_response)
             mock_client.default_model = "gemini-3-pro-preview"
             mock_get_client.return_value = mock_client
@@ -76,7 +79,9 @@ class TestGeminiTool:
             mock_client.fast_model = "gemini-3-flash-preview"
             mock_get_client.return_value = mock_client
 
-            result = await gemini(prompt="Question", mode="fast", context="Important context")
+            result = await gemini(
+                prompt="Question", mode="fast", context="Important context"
+            )
             assert result == "Response with context"
 
             # Verify the context was passed in the prompt
@@ -161,7 +166,9 @@ class TestAnalyzeTool:
             mock_client.default_model = "gemini-3-pro-preview"
             mock_get_client.return_value = mock_client
 
-            result = await analyze(target=diff, instruction="Review PR", focus="general")
+            result = await analyze(
+                target=diff, instruction="Review PR", focus="general"
+            )
             assert isinstance(result, dict)
             assert "review" in result
 

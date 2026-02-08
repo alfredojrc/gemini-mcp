@@ -122,7 +122,9 @@ class SwarmOrchestrator:
         try:
             result = await self._run_mission(trace, context, progress_callback)
             # Result is already saved inside _run_mission, but log completion.
-            logger.info(f"Background mission {trace.trace_id} completed: {result.status.value}")
+            logger.info(
+                f"Background mission {trace.trace_id} completed: {result.status.value}"
+            )
         except Exception as e:
             logger.exception(f"Background mission {trace.trace_id} failed: {e}")
             trace.status = TaskStatus.FAILED
@@ -158,7 +160,9 @@ class SwarmOrchestrator:
                 turn += 1
                 elapsed = time.time() - start_time
                 if elapsed > timeout:
-                    logger.warning(f"Mission {trace.trace_id} timed out after {elapsed:.0f}s")
+                    logger.warning(
+                        f"Mission {trace.trace_id} timed out after {elapsed:.0f}s"
+                    )
                     break
 
                 if progress_callback:
@@ -167,7 +171,11 @@ class SwarmOrchestrator:
 
                 # Build architect prompt including delegation results
                 prompt = self._build_architect_prompt(
-                    trace.objective, context, agent_results, turn, max_turns,
+                    trace.objective,
+                    context,
+                    agent_results,
+                    turn,
+                    max_turns,
                 )
 
                 request = GeminiRequest(
@@ -180,11 +188,13 @@ class SwarmOrchestrator:
                 response = await self.client.generate(request)
                 text = response.text
 
-                trace.messages.append(SwarmMessage(
-                    role="assistant",
-                    content=text,
-                    agent_type=AgentType.ARCHITECT,
-                ))
+                trace.messages.append(
+                    SwarmMessage(
+                        role="assistant",
+                        content=text,
+                        agent_type=AgentType.ARCHITECT,
+                    )
+                )
 
                 # ---- Parse structured actions from architect output --------
                 delegations = self._parse_delegations(text)
@@ -228,19 +238,26 @@ class SwarmOrchestrator:
                                 agent_def = self.registry.get_by_name(agent_name)
                                 agent_type = agent_def.agent_type
                             else:
-                                logger.warning(f"Unknown agent '{agent_name}', skipping delegation")
+                                logger.warning(
+                                    f"Unknown agent '{agent_name}', skipping delegation"
+                                )
                                 continue
 
                         agents_used.add(agent_type)
                         sub_result = await self._execute_agent(
-                            agent_def, task_desc, trace.objective, context,
+                            agent_def,
+                            task_desc,
+                            trace.objective,
+                            context,
                         )
                         agent_results[agent_type.value] = sub_result
-                        trace.messages.append(SwarmMessage(
-                            role="assistant",
-                            content=sub_result,
-                            agent_type=agent_type,
-                        ))
+                        trace.messages.append(
+                            SwarmMessage(
+                                role="assistant",
+                                content=sub_result,
+                                agent_type=agent_type,
+                            )
+                        )
                 else:
                     # No delegations AND no completion — treat as final answer.
                     trace.result = text
@@ -265,7 +282,11 @@ class SwarmOrchestrator:
                     )
 
             # ---- Exhausted turns / timed out ----------------------------
-            final = agent_results.get("architect") or trace.messages[-1].content if trace.messages else ""
+            final = (
+                agent_results.get("architect") or trace.messages[-1].content
+                if trace.messages
+                else ""
+            )
             trace.result = final
             trace.status = TaskStatus.COMPLETED
             trace.completed_at = datetime.now()
@@ -359,9 +380,9 @@ class SwarmOrchestrator:
     @staticmethod
     def _parse_completion(text: str) -> str | None:
         """Extract complete(result) from architect output."""
-        match = re.search(r'complete\((.*)\)', text, re.DOTALL | re.IGNORECASE)
+        match = re.search(r"complete\((.*)\)", text, re.DOTALL | re.IGNORECASE)
         if match:
-            return match.group(1).strip().strip('"\'')
+            return match.group(1).strip().strip("\"'")
         return None
 
     # ------------------------------------------------------------------
@@ -414,7 +435,9 @@ class SwarmOrchestrator:
         for i, persona_name in enumerate(panel_personas):
             if progress_callback:
                 progress = (i + 1) / (len(panel_personas) + 1)
-                await progress_callback(progress, f"Expert {persona_name} deliberating...")
+                await progress_callback(
+                    progress, f"Expert {persona_name} deliberating..."
+                )
 
             try:
                 agent_type = AgentType(persona_name.lower())
@@ -445,7 +468,7 @@ Respond in JSON with these fields:
             # Parse confidence from structured output if possible
             parsed_confidence = 0.8
             try:
-                json_match = re.search(r'\{[\s\S]*\}', response.text)
+                json_match = re.search(r"\{[\s\S]*\}", response.text)
                 if json_match:
                     parsed = json.loads(json_match.group())
                     parsed_confidence = float(parsed.get("confidence", 0.8))
@@ -453,12 +476,14 @@ Respond in JSON with these fields:
             except Exception:
                 pass
 
-            votes.append(PanelVote(
-                agent_type=agent_type,
-                position=response.text,
-                reasoning="",
-                confidence=parsed_confidence,
-            ))
+            votes.append(
+                PanelVote(
+                    agent_type=agent_type,
+                    position=response.text,
+                    reasoning="",
+                    confidence=parsed_confidence,
+                )
+            )
 
         # Synthesize verdict
         if progress_callback:
@@ -488,7 +513,7 @@ Provide in JSON:
         overall_confidence = sum(v.confidence for v in votes) / max(len(votes), 1)
         dissenting: list[str] = []
         try:
-            json_match = re.search(r'\{[\s\S]*\}', verdict_response.text)
+            json_match = re.search(r"\{[\s\S]*\}", verdict_response.text)
             if json_match:
                 parsed = json.loads(json_match.group())
                 overall_confidence = float(parsed.get("confidence", overall_confidence))

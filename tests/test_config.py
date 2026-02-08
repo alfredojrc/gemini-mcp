@@ -166,6 +166,7 @@ class TestAuthChain:
         with patch("gemini_mcp.core.gemini.genai.Client") as mock_client_cls:
             mock_client_cls.return_value = MagicMock()
             from gemini_mcp.core.gemini import GeminiClient
+
             client = GeminiClient()
 
             mock_client_cls.assert_called_once_with(api_key="test-key-123")
@@ -183,6 +184,7 @@ class TestAuthChain:
         with patch("gemini_mcp.core.gemini.genai.Client") as mock_client_cls:
             mock_client_cls.return_value = MagicMock()
             from gemini_mcp.core.gemini import GeminiClient
+
             client = GeminiClient()
 
             # Should use ADC fallback (no api_key, no credentials)
@@ -200,11 +202,15 @@ class TestAuthChain:
         gemini_dir = tmp_path / ".gemini"
         gemini_dir.mkdir()
         creds_file = gemini_dir / "oauth_creds.json"
-        creds_file.write_text(_json.dumps({
-            "access_token": "fake-token",
-            "refresh_token": "fake-refresh",
-            "scope": "openid email",
-        }))
+        creds_file.write_text(
+            _json.dumps(
+                {
+                    "access_token": "fake-token",
+                    "refresh_token": "fake-refresh",
+                    "scope": "openid email",
+                }
+            )
+        )
         monkeypatch.setenv("HOME", str(tmp_path))
 
         with patch("gemini_mcp.core.gemini.genai.Client") as mock_client_cls:
@@ -223,8 +229,11 @@ class TestAuthChain:
 
         monkeypatch.setenv("GOOGLE_API_KEY", "bad-key")
 
-        with patch("gemini_mcp.core.gemini.genai.Client", side_effect=Exception("Auth failed")):
+        with patch(
+            "gemini_mcp.core.gemini.genai.Client", side_effect=Exception("Auth failed")
+        ):
             from gemini_mcp.core.gemini import GeminiClient
+
             client = GeminiClient()
 
             # Should not crash; client set to None

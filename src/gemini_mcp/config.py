@@ -122,8 +122,13 @@ class GeminiMCPConfig(BaseSettings):
             raise ValueError(f"server_port must be 1-65535, got {v}")
         return v
 
-    @field_validator("timeout", "activity_timeout", "reasoning_timeout",
-                     "debate_turn_timeout", "parallel_search_timeout")
+    @field_validator(
+        "timeout",
+        "activity_timeout",
+        "reasoning_timeout",
+        "debate_turn_timeout",
+        "parallel_search_timeout",
+    )
     @classmethod
     def _positive_timeout(cls, v: int) -> int:
         if v < 1:

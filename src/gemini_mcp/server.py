@@ -300,13 +300,13 @@ def load_plugins() -> None:
 
         # --- Integrity gate ---
         if not _verify_plugin_hash(plugin_file):
-            logger.warning(f"Plugin failed integrity check, skipping: {plugin_file.name}")
+            logger.warning(
+                f"Plugin failed integrity check, skipping: {plugin_file.name}"
+            )
             continue
 
         try:
-            spec = importlib.util.spec_from_file_location(
-                plugin_file.stem, plugin_file
-            )
+            spec = importlib.util.spec_from_file_location(plugin_file.stem, plugin_file)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
@@ -356,9 +356,15 @@ def _run_with_auth() -> None:
 
     if config.rate_limit > 0:
         middleware.append(
-            Middleware(RateLimitMiddleware, rate=config.rate_limit, burst=config.rate_limit_burst)
+            Middleware(
+                RateLimitMiddleware,
+                rate=config.rate_limit,
+                burst=config.rate_limit_burst,
+            )
         )
-        logger.info(f"Rate limiting enabled: {config.rate_limit}/min (burst: {config.rate_limit_burst})")
+        logger.info(
+            f"Rate limiting enabled: {config.rate_limit}/min (burst: {config.rate_limit_burst})"
+        )
 
     if config.max_request_size > 0:
         middleware.append(
@@ -387,7 +393,9 @@ def _load_personas() -> None:
     registry = get_agent_registry()
     count = registry.load_personas_from_dir(personas_dir)
     if count:
-        logger.info(f"Loaded {count} custom persona(s): {', '.join(registry.list_custom_agents())}")
+        logger.info(
+            f"Loaded {count} custom persona(s): {', '.join(registry.list_custom_agents())}"
+        )
 
 
 def main() -> None:

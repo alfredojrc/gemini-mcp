@@ -19,6 +19,7 @@ class TestSwarmParsing:
         self.orch = SwarmOrchestrator.__new__(SwarmOrchestrator)
         # Provide a minimal registry for prompt-building tests
         from gemini_mcp.swarm.agents import AgentRegistry
+
         self.orch.registry = AgentRegistry()
 
     def test_parse_single_delegation(self):
@@ -169,6 +170,7 @@ class TestTraceStore:
         """Save and load a trace."""
         monkeypatch.setenv("GEMINI_MCP_DATA_DIR", str(tmp_path))
         from gemini_mcp.config import GeminiMCPConfig
+
         monkeypatch.setattr("gemini_mcp.swarm.memory.config", GeminiMCPConfig())
 
         store = TraceStore()
@@ -195,6 +197,7 @@ class TestTraceStore:
         """Loading a nonexistent trace returns None."""
         monkeypatch.setenv("GEMINI_MCP_DATA_DIR", str(tmp_path))
         from gemini_mcp.config import GeminiMCPConfig
+
         monkeypatch.setattr("gemini_mcp.swarm.memory.config", GeminiMCPConfig())
 
         store = TraceStore()
@@ -204,6 +207,7 @@ class TestTraceStore:
         """List recent traces."""
         monkeypatch.setenv("GEMINI_MCP_DATA_DIR", str(tmp_path))
         from gemini_mcp.config import GeminiMCPConfig
+
         monkeypatch.setattr("gemini_mcp.swarm.memory.config", GeminiMCPConfig())
 
         store = TraceStore()
@@ -223,6 +227,7 @@ class TestTraceStore:
         """Saving a trace creates a .lock sidecar file."""
         monkeypatch.setenv("GEMINI_MCP_DATA_DIR", str(tmp_path))
         from gemini_mcp.config import GeminiMCPConfig
+
         monkeypatch.setattr("gemini_mcp.swarm.memory.config", GeminiMCPConfig())
 
         store = TraceStore()

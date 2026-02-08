@@ -83,11 +83,13 @@ class GeminiClient:
                         "GCP project auto-discovery disabled. "
                         "Set GEMINI_MCP_AUTO_DISCOVER_PROJECT=true to enable."
                     )
-                    
+
                 if project_id:
                     logger.info(f"Using Vertex AI with project: {project_id}")
                 else:
-                    logger.warning("Could not determine Project ID. OAuth may fail if Vertex AI is required.")
+                    logger.warning(
+                        "Could not determine Project ID. OAuth may fail if Vertex AI is required."
+                    )
             else:
                 logger.warning(
                     "No authentication found. Set GOOGLE_API_KEY or run 'gemini login'"
@@ -104,7 +106,7 @@ class GeminiClient:
                     credentials=credentials,
                     vertexai=True,
                     project=project_id,
-                    location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+                    location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
                 )
                 logger.info("Authenticated using OAuth credentials (Vertex AI)")
             elif credentials:
@@ -132,19 +134,19 @@ class GeminiClient:
 
             url = "https://cloudresourcemanager.googleapis.com/v1/projects"
             headers = {"Authorization": f"Bearer {creds.token}"}
-            
+
             # Use a short timeout to not block startup
             resp = requests.get(url, headers=headers, timeout=3.0)
             if resp.status_code == 200:
                 projects = resp.json().get("projects", [])
                 if projects:
-                    return projects[0]['projectId']
+                    return projects[0]["projectId"]
             else:
                 logger.warning(f"Failed to list projects: {resp.status_code}")
-                
+
         except Exception as e:
             logger.warning(f"Project auto-discovery failed: {e}")
-        
+
         return None
 
     def _load_cli_credentials(self) -> Credentials | None:

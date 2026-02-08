@@ -77,7 +77,11 @@ class TestDebateMemory:
         """Save and load a debate result."""
         monkeypatch.setattr(
             "gemini_mcp.debate.orchestrator.config",
-            type("C", (), {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2})(),
+            type(
+                "C",
+                (),
+                {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2},
+            )(),
         )
         mem = DebateMemory()
 
@@ -104,7 +108,11 @@ class TestDebateMemory:
         """Loading nonexistent debate returns None."""
         monkeypatch.setattr(
             "gemini_mcp.debate.orchestrator.config",
-            type("C", (), {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2})(),
+            type(
+                "C",
+                (),
+                {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2},
+            )(),
         )
         mem = DebateMemory()
         assert mem.load("nonexistent") is None
@@ -113,12 +121,18 @@ class TestDebateMemory:
         """Find debates related to a topic."""
         monkeypatch.setattr(
             "gemini_mcp.debate.orchestrator.config",
-            type("C", (), {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2})(),
+            type(
+                "C",
+                (),
+                {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2},
+            )(),
         )
         mem = DebateMemory()
 
         # Save a few debates
-        for i, topic in enumerate(["machine learning trading", "deep learning models", "cooking recipes"]):
+        for i, topic in enumerate(
+            ["machine learning trading", "deep learning models", "cooking recipes"]
+        ):
             result = DebateResult(
                 debate_id=f"d-{i}",
                 topic=topic,
@@ -137,7 +151,11 @@ class TestDebateMemory:
         """Get debate statistics."""
         monkeypatch.setattr(
             "gemini_mcp.debate.orchestrator.config",
-            type("C", (), {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2})(),
+            type(
+                "C",
+                (),
+                {"debate_storage_dir": tmp_path, "debate_novelty_threshold": 0.2},
+            )(),
         )
         mem = DebateMemory()
 
@@ -163,6 +181,7 @@ class TestJSONExtraction:
 
     def setup_method(self):
         from gemini_mcp.debate.orchestrator import DebateOrchestrator
+
         self.extract = DebateOrchestrator._extract_json_object
 
     def test_clean_json(self):

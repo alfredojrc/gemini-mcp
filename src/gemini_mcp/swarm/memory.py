@@ -48,13 +48,17 @@ class TraceStore:
             "error": trace.error,
             "total_turns": trace.total_turns,
             "created_at": trace.created_at.isoformat(),
-            "completed_at": trace.completed_at.isoformat() if trace.completed_at else None,
+            "completed_at": (
+                trace.completed_at.isoformat() if trace.completed_at else None
+            ),
         }
         try:
             with self._lock_for(trace_file):
                 trace_file.write_text(json.dumps(data, indent=2))
         except Timeout:
-            logger.warning(f"Lock timeout writing trace {trace.trace_id}, writing without lock")
+            logger.warning(
+                f"Lock timeout writing trace {trace.trace_id}, writing without lock"
+            )
             trace_file.write_text(json.dumps(data, indent=2))
 
         self._enforce_quota()
@@ -107,16 +111,20 @@ class TraceStore:
         """List recent traces."""
         traces = []
         for trace_file in sorted(
-            self.storage_dir.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True
+            self.storage_dir.glob("*.json"),
+            key=lambda f: f.stat().st_mtime,
+            reverse=True,
         )[:limit]:
             try:
                 data = json.loads(trace_file.read_text())
-                traces.append({
-                    "trace_id": data["trace_id"],
-                    "objective": data["objective"][:100],
-                    "status": data["status"],
-                    "created_at": data["created_at"],
-                })
+                traces.append(
+                    {
+                        "trace_id": data["trace_id"],
+                        "objective": data["objective"][:100],
+                        "status": data["status"],
+                        "created_at": data["created_at"],
+                    }
+                )
             except Exception:
                 pass
         return traces
@@ -151,10 +159,7 @@ class SwarmRegistry:
 
     def list_running(self) -> list[dict]:
         """List currently running swarms."""
-        return [
-            {"trace_id": tid, **info}
-            for tid, info in self._running.items()
-        ]
+        return [{"trace_id": tid, **info} for tid, info in self._running.items()]
 
     def is_running(self, trace_id: str) -> bool:
         """Check if a swarm is running."""
