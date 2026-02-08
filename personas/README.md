@@ -1,76 +1,118 @@
 # Custom Personas
 
-Custom persona definitions that extend the swarm system with specialized agents. These are loaded automatically on server startup.
+A library of specialized agent personas for the swarm system. Loaded automatically on server startup. Use them in `swarm()` and `swarm_adjudicate()` calls.
 
-## Included Personas
+## Persona Catalog
 
+### Security & Compliance
 | Persona | File | Specialization |
 |---------|------|----------------|
-| Security Expert | `security_expert.md` | Vulnerability assessment, threat modeling, secure code review |
-| DevOps Engineer | `devops_engineer.md` | Infrastructure automation, CI/CD, observability |
-| Codebase Investigator | `codebase_investigator.md` | Root cause analysis, dependency tracing, debugging |
-| Code Reviewer | `code_reviewer.md` | Code correctness, edge cases, maintainability |
-| Systems Engineer | `systems_engineer.md` | Performance optimization, low-latency, concurrency |
+| Security Expert | `security_expert.md` | Vulnerability assessment, OWASP, secure code review |
+| Penetration Tester | `pentester.md` | Ethical hacking, attack simulation, exploit PoCs |
+| Threat Modeler | `threat_modeler.md` | STRIDE/PASTA analysis, trust boundaries, risk rating |
+| Compliance Analyst | `compliance_analyst.md` | GDPR, SOC 2, HIPAA, regulatory controls mapping |
 
-## Persona Format
+### Engineering & Architecture
+| Persona | File | Specialization |
+|---------|------|----------------|
+| Systems Engineer | `systems_engineer.md` | Low-latency, concurrency, memory optimization |
+| Cloud Architect | `cloud_architect.md` | Multi-cloud, serverless, cost optimization, DR |
+| Frontend Architect | `frontend_architect.md` | React/Vue/Angular, Web Vitals, accessibility |
+| API Designer | `api_designer.md` | REST, GraphQL, gRPC, API versioning |
+| Database Expert | `database_expert.md` | SQL/NoSQL, query optimization, schema design |
+| Mobile Developer | `mobile_developer.md` | iOS, Android, cross-platform, offline-first |
+| Blockchain Developer | `blockchain_developer.md` | Smart contracts, DeFi, gas optimization |
 
-Each persona is a Markdown file with these sections:
+### Operations & Reliability
+| Persona | File | Specialization |
+|---------|------|----------------|
+| DevOps Engineer | `devops_engineer.md` | CI/CD, IaC, container orchestration |
+| SRE Engineer | `sre_engineer.md` | SLOs, incident response, chaos engineering |
+| Performance Engineer | `performance_engineer.md` | Profiling, load testing, bottleneck elimination |
+
+### Data & ML
+| Persona | File | Specialization |
+|---------|------|----------------|
+| Data Scientist | `data_scientist.md` | Statistics, ML model selection, experimentation |
+| ML Engineer | `ml_engineer.md` | MLOps, model serving, distributed training |
+| Data Engineer | `data_engineer.md` | Pipelines, warehousing, stream processing |
+
+### Finance & Trading
+| Persona | File | Specialization |
+|---------|------|----------------|
+| Quantitative Analyst | `quant_analyst.md` | Signal discovery, risk modeling, backtesting |
+| Market Maker | `market_maker.md` | Execution algorithms, order book, inventory management |
+
+### Analysis & Investigation
+| Persona | File | Specialization |
+|---------|------|----------------|
+| Codebase Investigator | `codebase_investigator.md` | Root cause analysis, dependency tracing |
+| Code Reviewer | `code_reviewer.md` | Correctness, edge cases, maintainability |
+| Research Analyst | `researcher.md` | Literature review, technology evaluation |
+
+### Product & Design
+| Persona | File | Specialization |
+|---------|------|----------------|
+| Product Manager | `product_manager.md` | Requirements, prioritization, roadmapping |
+| UX Designer | `ux_designer.md` | Usability, information architecture, accessibility |
+| Technical Writer | `technical_writer.md` | API docs, tutorials, architecture decision records |
+
+## Usage
+
+```python
+# Security audit with specialized agents
+swarm(
+    objective="Audit the authentication system for vulnerabilities",
+    agents=["architect", "security_expert", "pentester", "threat_modeler"]
+)
+
+# Data pipeline review
+swarm(
+    objective="Review our ETL pipeline for reliability issues",
+    agents=["architect", "data_engineer", "sre_engineer"]
+)
+
+# Expert panel on technology choice
+swarm_adjudicate(
+    query="Should we use GraphQL or REST for our public API?",
+    panel=["api_designer", "frontend_architect", "performance_engineer"]
+)
+
+# Trading system design
+swarm(
+    objective="Design a market-making strategy for BTC perpetuals",
+    agents=["architect", "quant_analyst", "market_maker"]
+)
+```
+
+## Creating Your Own
+
+1. Create a `.md` file in this directory
+2. Follow the format below
+3. Restart the server
+4. Reference by filename (e.g., `my_expert.md` becomes `my_expert`)
 
 ```markdown
 # Persona Name
 
 ## Role
-Brief description of the persona's role and approach.
+What this persona does and how it approaches problems.
 
 ## Expertise
-- Area 1
-- Area 2
+- Domain area 1
+- Domain area 2
 
 ## Capabilities
-What this persona can do.
+What specific tasks this persona can perform.
 
 ## Tools
-Which tools this persona uses:
 - analyze
 - search
 - complete
 
 ## Guidelines
-How this persona should behave (numbered directives).
+1. Behavioral directive 1
+2. Behavioral directive 2
 ```
 
-### Sections
-
-| Section | Required | Purpose |
-|---------|----------|---------|
-| `# Title` | Yes | Agent display name |
-| `## Role` | Yes | Injected as identity in the system prompt |
-| `## Expertise` | No | Domain knowledge areas |
-| `## Capabilities` | No | What the agent can do |
-| `## Tools` | No | Available tools (defaults to `analyze`, `complete`) |
-| `## Guidelines` | No | Behavioral directives |
-
-## Using Custom Personas
-
-Reference persona file names (without `.md`) in swarm operations:
-
-```python
-# Use in a swarm mission
-swarm(
-    objective="Audit the authentication system",
-    agents=["architect", "security_expert", "code_reviewer"]
-)
-
-# Use in adjudication panel
-swarm_adjudicate(
-    query="Should we use JWT or session tokens?",
-    panel=["security_expert", "systems_engineer", "architect"]
-)
-```
-
-## Adding Your Own
-
-1. Create a `.md` file in this directory following the format above
-2. Restart the server — personas are loaded on startup
-3. Reference by filename (e.g., `my_persona.md` becomes `my_persona`)
-4. Optionally set `GEMINI_MCP_PERSONAS_DIR` to load from a different directory
+Set `GEMINI_MCP_PERSONAS_DIR` to load personas from a custom directory.
