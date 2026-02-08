@@ -1,0 +1,63 @@
+# Gemini MCP Server - Docker Compose
+# Basic deployment for development and production use
+
+services:
+  # ===========================================================================
+  # Gemini MCP Server (HTTP/SSE Transport)
+  # ===========================================================================
+  gemini-mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: gemini_mcp_v2
+    restart: unless-stopped
+    ports:
+      - "${GEMINI_MCP_SERVER_PORT:-33021}:8765"
+    environment:
+      - GEMINI_MCP_TRANSPORT=sse
+      - GEMINI_MCP_SERVER_PORT=8765
+      - GEMINI_MCP_DEFAULT_MODEL=${GEMINI_MCP_DEFAULT_MODEL:-gemini-3-pro-preview}
+      - GEMINI_MCP_FAST_MODEL=${GEMINI_MCP_FAST_MODEL:-gemini-3-flash-preview}
+      - GEMINI_MCP_LOG_LEVEL=${GEMINI_MCP_LOG_LEVEL:-INFO}
+      - GEMINI_MCP_ENABLE_SWARM=${GEMINI_MCP_ENABLE_SWARM:-true}
+      - GEMINI_MCP_ENABLE_DEBATE=${GEMINI_MCP_ENABLE_DEBATE:-true}
+      # Pass API key if set (otherwise uses OAuth from mounted credentials)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      # Persistent data storage
+      - gemini_mcp_v2_data:/home/app/.gemini-mcp
+      # Custom plugins (optional)
+      - ./plugins:/app/plugins:ro
+      # Custom personas (optional)
+      - ./personas:/app/personas:ro
+      # OAuth credentials from host (Gemini CLI) — optional, remove if not using OAuth
+      # Uncomment or set GEMINI_CREDS_PATH to mount credentials:
+      - ${GEMINI_CREDS_PATH:-/dev/null}:/home/app/.gemini/oauth_creds.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================================================
+  # Gemini MCP Server (STDIO Transport - for CLI use)
+  # ===========================================================================
+  gemini-mcp-stdio:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    profiles:
+      - stdio
+    stdin_open: true
+    tty: true
+    environment:
+      - GEMINI_MCP_TRANSPORT=stdio
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    volumes:
+      - ${GEMINI_CREDS_PATH:-/dev/null}:/home/app/.gemini/oauth_creds.json:ro
+      - gemini_mcp_v2_data:/home/app/.gemini-mcp
+
+volumes:
+  gemini_mcp_v2_data:
+    name: gemini_mcp_v2_data
