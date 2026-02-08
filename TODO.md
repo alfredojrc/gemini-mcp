@@ -2,10 +2,11 @@
 
 > Generated from comprehensive code analysis on 2026-02-05
 > Updated with security/bug audit on 2026-02-08
+> Round 3 cleanup on 2026-02-08 (MCP bump, CI scanning, P3 fixes, docs)
 
 ---
 
-## P0 — Critical (Fix Before Any Deployment)
+## P0 — Critical (Fix Before Any Deployment) — ALL RESOLVED
 
 ### SECURITY (Round 1 — 2026-02-05) — ALL RESOLVED
 
@@ -31,7 +32,7 @@
 
 ---
 
-## P1 — High (Before Production Use)
+## P1 — High (Before Production Use) — ALL RESOLVED
 
 ### SWARM (Round 1 — 2026-02-05) — ALL RESOLVED
 
@@ -67,15 +68,15 @@
 - [x] **Fix bare `except: pass` in directory analysis** — Now logs `logger.debug(f"Skipping file {file_path}: {e}")` instead of silently swallowing all exceptions. *(Fixed 2026-02-08)*
 - [x] **Add token validation to all API code paths** — `_review_code()`, `_review_diff()`, `_search_quick()`, `_search_deep()`, `_search_academic()`, `_search_docs()`, `_explain_architecture()` all now call `_validate_prompt_tokens()`. *(Fixed 2026-02-08)*
 
-### DEPENDENCIES (Round 2 — 2026-02-08) — PARTIALLY RESOLVED
+### DEPENDENCIES (Round 2+3 — 2026-02-08) — ALL RESOLVED
 
-- [ ] **Bump `mcp==1.23.0` to `mcp==1.26.0`** — 3 versions behind, bugfixes only, no breaking changes. Prepare for MCP SDK v2 (Q1 2026) renaming `FastMCP` → `MCPServer`. *(Deferred — needs integration testing)*
+- [x] **Bump `mcp` to `>=1.25.0,<2.0`** — Updated from `==1.23.0`. Pinned to v1.x for stability ahead of MCP SDK v2 (Q1 2026) which renames `FastMCP` → `MCPServer`. *(Fixed 2026-02-08)*
 - [x] **Pin `google-genai` properly** — Changed `>=0.3.0` to `>=1.50.0,<2.0` to ensure Gemini 3 support and prevent breaking changes. *(Fixed 2026-02-08)*
 - [x] **Bump `httpx` minimum** — Changed `>=0.25.0` to `>=0.27.0`. *(Fixed 2026-02-08)*
 
 ---
 
-## P2 — Medium (Quality & Robustness)
+## P2 — Medium (Quality & Robustness) — ALL RESOLVED
 
 ### TESTING (Round 1 — 2026-02-05) — ALL RESOLVED
 
@@ -95,10 +96,10 @@
 - [x] ~~**Replace naive relevance scoring**~~ *(Resolved 2026-02-05)*
 - [x] **Handle encoding errors explicitly** *(Fixed 2026-02-05)*
 
-### DOCKER & DEPLOYMENT (Round 1)
+### DOCKER & DEPLOYMENT (Round 1+3) — ALL RESOLVED
 
 - [x] ~~**Fix Nginx health check path**~~ — Resolved by P0 `/health` endpoint fix.
-- [ ] **Validate Qdrant integration** — `docker-compose.prod.yml` includes Qdrant but no code connects to it. *(Deferred — requires Qdrant SDK dependency)*
+- [x] **Validate Qdrant integration** — `docker-compose.prod.yml` Qdrant is correctly gated behind `profiles: [qdrant]` (opt-in). No code dependency needed until Qdrant client integration is implemented as a feature. *(Resolved 2026-02-08)*
 - [x] **Add version validation to release workflow** *(Fixed 2026-02-05)*
 - [x] **Handle missing credential mount** *(Fixed 2026-02-05)*
 
@@ -108,24 +109,26 @@
 - [x] **Validate transport config** *(Fixed 2026-02-05)*
 - [x] ~~**Review `max_context_tokens` default**~~ — 900K is correct for Gemini 3.
 
-### DOCUMENTATION (Round 1 — 2026-02-05) — ALL RESOLVED
+### DOCUMENTATION (Round 1+3 — 2026-02-08) — ALL RESOLVED
 
-- [x] **Update README.md** *(Fixed 2026-02-05)*
-- [x] **Update .env.example** *(Fixed 2026-02-05)*
+- [x] **Update README.md** — Added security scanning badge, middleware architecture diagram, rate limiting + internal limits config tables, MCP v2 migration note. *(Updated 2026-02-08)*
+- [x] **Update .env.example** — Added `SWARM_MAX_TURNS`, `MAX_TRACE_FILES`, `MAX_DEBATE_FILES`, `RESULT_TRUNCATION_CHARS`. *(Updated 2026-02-08)*
+- [x] **Update CHANGELOG.md** — Added v1.1.0 with complete security/fix/change log. *(Updated 2026-02-08)*
+- [x] **Update SECURITY.md** — Added pure ASGI middleware, timing attack, ReDoS, thread safety, CI scanning. *(Updated 2026-02-08)*
 
-### BUGS (Round 2 — 2026-02-08) — MOSTLY RESOLVED
+### BUGS (Round 2+3 — 2026-02-08) — ALL RESOLVED
 
-- [x] **Fix path validation bypass via inline code** — Reordered `analyze()` to check paths before inline code detection. Single-line non-code inputs are now validated as paths first, preventing newline injection bypass. *(Fixed 2026-02-08)*
-- [x] **Fix unbounded file reading in directory analysis** — Now checks `file_path.stat().st_size` before reading. Large files are skipped with debug logging. *(Fixed 2026-02-08)*
-- [x] **Add bounds to JSON extraction parser** — `_extract_json_object()` now limits scan to 100K characters to prevent CPU exhaustion on malformed input. *(Fixed 2026-02-08)*
-- [x] **Fix unsafe regex in delegation parsing (ReDoS)** — Replaced `(.*?)` with `[^)]{1,2000}` character class + manual split. Prevents catastrophic backtracking. *(Fixed 2026-02-08)*
-- [x] **Cap adjudication panel size** — Panel now capped at 10 personas. Excess personas logged and truncated. *(Fixed 2026-02-08)*
-- [x] **Wrap progress callbacks in try/except** — All progress callbacks in swarm and debate orchestrators now wrapped with exception handling. Callback failures logged but don't crash missions. *(Fixed 2026-02-08)*
-- [x] **Fix plugin allowlist directory traversal** — Now checks `plugin_file.relative_to(plugin_path)` instead of just `plugin_file.name`. *(Fixed 2026-02-08)*
-- [x] **Fix async mission registry leak** — `_run_and_persist()` now uses `finally` block to ensure `unregister()` runs even on cancellation. *(Fixed 2026-02-08)*
-- [x] **Fix `get_by_name()` ValueError in delegation** — Custom persona lookup now wrapped in `try/except (ValueError, KeyError)`. *(Fixed 2026-02-08)*
-- [x] **Fix non-thread-safe client singleton** — `get_client()` now uses double-checked locking with `threading.Lock`. *(Fixed 2026-02-08)*
-- [ ] **Add CI vulnerability scanning** — No `trivy`, `safety`, or `docker scan` in CI pipeline. Add dependency + container security scanning.
+- [x] **Fix path validation bypass via inline code** — Reordered `analyze()` to check paths before inline code detection. *(Fixed 2026-02-08)*
+- [x] **Fix unbounded file reading in directory analysis** — Now checks `file_path.stat().st_size` before reading. *(Fixed 2026-02-08)*
+- [x] **Add bounds to JSON extraction parser** — `_extract_json_object()` now limits scan to 100K characters. *(Fixed 2026-02-08)*
+- [x] **Fix unsafe regex in delegation parsing (ReDoS)** — Replaced `(.*?)` with `[^)]{1,2000}` + manual split. *(Fixed 2026-02-08)*
+- [x] **Cap adjudication panel size** — Panel now capped at 10 personas. *(Fixed 2026-02-08)*
+- [x] **Wrap progress callbacks in try/except** — All callbacks now wrapped with exception handling. *(Fixed 2026-02-08)*
+- [x] **Fix plugin allowlist directory traversal** — Now checks `relative_to(plugin_path)`. *(Fixed 2026-02-08)*
+- [x] **Fix async mission registry leak** — `_run_and_persist()` uses `finally` block. *(Fixed 2026-02-08)*
+- [x] **Fix `get_by_name()` ValueError in delegation** — Wrapped in `try/except (ValueError, KeyError)`. *(Fixed 2026-02-08)*
+- [x] **Fix non-thread-safe client singleton** — Double-checked locking with `threading.Lock`. *(Fixed 2026-02-08)*
+- [x] **Add CI vulnerability scanning** — GitHub Actions workflow with Trivy (Docker image + filesystem) and pip-audit. *(Fixed 2026-02-08)*
 
 ---
 
@@ -139,34 +142,37 @@
 - [x] **Add debate context truncation warning** *(Verified 2026-02-05)*
 - [x] **Make GCP project auto-discovery opt-in** *(Fixed 2026-02-05)*
 
-### RESOLVED (Round 2 — 2026-02-08)
+### RESOLVED (Round 2+3 — 2026-02-08)
 
-- [x] **Make Bearer scheme case-insensitive** — `BearerAuthMiddleware` now uses `auth_header[:7].lower() == "bearer "` per RFC 7235. *(Fixed 2026-02-08)*
-- [x] **Fix empty completion parsing** — `_parse_completion()` now returns `None` for empty strings instead of `""`. *(Fixed 2026-02-08)*
+- [x] **Make Bearer scheme case-insensitive** — per RFC 7235. *(Fixed 2026-02-08)*
+- [x] **Fix empty completion parsing** — Returns `None` for empty strings. *(Fixed 2026-02-08)*
+- [x] **Fix Docker HEALTHCHECK port variable** — Hardcoded port in health check to match EXPOSE directive (build-time `${GEMINI_MCP_SERVER_PORT}` doesn't resolve at runtime). *(Fixed 2026-02-08)*
+- [x] **Move magic numbers to config** — `swarm_max_turns`, `max_trace_files`, `max_debate_files`, `result_truncation_chars` now configurable via `GEMINI_MCP_` env vars. *(Fixed 2026-02-08)*
+- [x] **Validate debate strategy input** — Unknown strategy now returns error with valid options list instead of silently defaulting. *(Fixed 2026-02-08)*
+- [x] **Add input length validation** — `objective`, `topic`, `context` parameters validated against `max_context_tokens * 4` chars. *(Fixed 2026-02-08)*
 
-### OPEN
+### OPEN (Future Enhancements)
 
 - [ ] **Implement plugin sandboxing** (e.g. restricted imports, resource limits) — Complex, deferred. Current allowlist + SHA-256 verification provides baseline security.
-- [ ] **Fix Docker HEALTHCHECK port variable** — `Dockerfile:57`: uses build-time `${GEMINI_MCP_SERVER_PORT}`, fails if overridden at runtime.
-- [ ] **Move magic numbers to config** — `_MAX_TURNS=10`, `_MAX_TRACE_FILES=500`, `_MAX_DEBATE_FILES=500`, result truncation 2000 chars — should be configurable.
 - [ ] **Add HTTP integration tests** — All current tests use mocks. Need real HTTP client tests for auth, rate limiting, SSE transport.
-- [ ] **Improve debate novelty for first round** — `debate/orchestrator.py:495`: first round always returns novelty=1.0, making convergence detection useless until round 3+.
-- [ ] **Validate debate strategy input** — `debate_tools.py:98`: invalid strategy silently defaults to COLLABORATIVE with no user feedback.
-- [ ] **Add input length validation** — No length limits on `objective`, `topic`, `context` parameters. Very long inputs can exhaust memory in TF-IDF tokenization.
+- [ ] **Improve debate novelty for first round** — `debate/orchestrator.py:495`: first round always returns novelty=1.0, making convergence detection useless until round 3+. By design — `min_rounds` exists for this reason.
+- [ ] **Add Qdrant client integration** — `docker-compose.prod.yml` includes Qdrant behind `profiles: [qdrant]`. Future: add `qdrant-client` dependency and vector search integration for knowledge storage.
+- [ ] **MCP SDK v2 migration** — When MCP SDK v2 ships (Q1 2026), migrate `FastMCP` → `MCPServer`, move transport params from constructor to `run()`. Current pin `>=1.25.0,<2.0` ensures stability.
 
 ---
 
 ## Metrics Snapshot
 
-| Metric | Value (2026-02-05) | Value (2026-02-08) |
-|--------|--------------------|---------------------|
-| Source LOC | ~3,500 | ~3,700 |
-| Test LOC | ~850 | ~860 |
-| Test count | 112 | 116 (all passing) |
-| Test coverage | ~65% | ~65% |
-| P0 issues | ~~5~~ → 0 | 5 → **0** |
-| P1 issues | ~~13~~ → 0 | 9 → **1** (mcp bump deferred) |
-| P2 issues | ~~16~~ → 1 | 12 → **2** (Qdrant, CI scanning) |
-| P3 issues | ~~6~~ → 1 | 9 → **7** |
-| Security findings | ~~5~~ → 0 | 8 → **0** |
-| Dependencies outdated | — | 4 → **1** (mcp only) |
+| Metric | Value (2026-02-05) | Value (2026-02-08 R2) | Value (2026-02-08 R3) |
+|--------|--------------------|-----------------------|-----------------------|
+| Source LOC | ~3,500 | ~3,700 | ~3,800 |
+| Test LOC | ~850 | ~860 | ~860 |
+| Test count | 112 | 116 (all passing) | 116 (all passing) |
+| Test coverage | ~65% | ~65% | ~65% |
+| P0 issues | ~~5~~ → 0 | 5 → **0** | **0** |
+| P1 issues | ~~13~~ → 0 | 9 → **1** | **0** |
+| P2 issues | ~~16~~ → 1 | 12 → **2** | **0** |
+| P3 issues | ~~6~~ → 1 | 9 → **7** | **5** (future enhancements) |
+| Security findings | ~~5~~ → 0 | 8 → **0** | **0** |
+| Dependencies outdated | — | 4 → **1** | **0** |
+| CI workflows | 2 (ci, release) | 2 | **3** (+ security) |

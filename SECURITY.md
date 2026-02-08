@@ -56,12 +56,17 @@ The following are in scope for security reports:
 
 gemini-mcp implements defense in depth:
 
-- **Authentication**: Optional bearer token for HTTP transports (`GEMINI_MCP_AUTH_TOKEN`)
-- **Path validation**: File analysis restricted to configured allowed paths; blocks `/etc`, `/proc`, `/sys`, `/dev`, `/boot`
-- **Plugin sandboxing**: Allowlist + SHA-256 hash verification for loaded plugins
-- **Rate limiting**: Per-IP token bucket middleware with configurable limits
-- **Request size limits**: Configurable maximum request body size (default 10MB)
+- **Authentication**: Optional bearer token for HTTP transports (`GEMINI_MCP_AUTH_TOKEN`) with constant-time comparison (`hmac.compare_digest`) and RFC 7235-compliant case-insensitive scheme parsing
+- **Pure ASGI middleware**: All middleware (auth, rate limit, size limit) uses raw ASGI protocol — no `BaseHTTPMiddleware` to avoid SSE streaming buffer, background task blocking, and ContextVar issues
+- **Path validation**: File analysis restricted to configured allowed paths; blocks `/etc`, `/proc`, `/sys`, `/dev`, `/boot`; validates path before inline code detection
+- **Plugin sandboxing**: Allowlist with relative path validation (`relative_to()`) + SHA-256 hash verification
+- **Rate limiting**: Per-IP token bucket with LRU eviction (10K bucket cap) preventing memory exhaustion from rotating-IP attacks
+- **Request size limits**: Configurable max body size (default 10MB) with chunked transfer encoding support
+- **Input length validation**: All tool inputs validated against `max_context_tokens * 4` to prevent memory exhaustion in TF-IDF tokenization
+- **ReDoS prevention**: LLM output parsing uses bounded character classes (`[^)]{1,2000}`) and 100K char scan limits
+- **Thread safety**: Client singleton uses double-checked locking; TraceStore quota uses `threading.Lock`
 - **Audit logging**: Optional structured JSON logging of all tool invocations
+- **CI security scanning**: Trivy (Docker image + filesystem) and pip-audit in GitHub Actions
 - **No secrets in code**: All credentials via environment variables; `.env` excluded from version control
 
 ### Acknowledgments

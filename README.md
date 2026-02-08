@@ -1,6 +1,7 @@
 # gemini-mcp
 
 [![CI](https://github.com/alfredojrc/gemini-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/alfredojrc/gemini-mcp/actions/workflows/ci.yml)
+[![Security](https://github.com/alfredojrc/gemini-mcp/actions/workflows/security.yml/badge.svg)](https://github.com/alfredojrc/gemini-mcp/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
@@ -14,7 +15,7 @@ A Model Context Protocol (MCP) server wrapping Google's Gemini AI, enabling AI a
 - **Web Search**: Integrated Google Search grounding (quick, deep, academic, docs)
 - **Multi-Agent Swarm**: Supervisor-pattern delegation with 7 specialized agent types
 - **AI Debates**: Structured AI-to-AI debates with TF-IDF novelty detection and persistence
-- **Security**: Bearer token auth, path validation, plugin sandboxing with SHA-256 verification
+- **Security**: Bearer token auth (constant-time, RFC 7235), pure ASGI middleware, path validation, rate limiting with LRU eviction, CI vulnerability scanning
 - **Plugin System**: Extend functionality with custom tools (allowlist + hash verification)
 - **Multiple Transports**: STDIO, SSE, and Streamable-HTTP support
 
@@ -114,8 +115,14 @@ debate(topic="Microservices vs monolith for a startup?", strategy="adversarial",
 │               (Gemini CLI / Claude / Custom)                  │
 └──────────────────────────┬───────────────────────────────────┘
                            │ MCP Protocol (JSON-RPC 2.0)
-                           │ + Optional Bearer Token Auth
+                           │
 ┌──────────────────────────▼───────────────────────────────────┐
+│                  PURE ASGI MIDDLEWARE STACK                    │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │ BearerAuth → RateLimit → SizeLimit → MCP Server      │    │
+│  │ (hmac)       (LRU)       (chunked)                    │    │
+│  └──────────────────────────────────────────────────────┘    │
+├──────────────────────────────────────────────────────────────┤
 │                     GEMINI-MCP SERVER                         │
 │                                                               │
 │  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌────────────┐  │
@@ -171,6 +178,14 @@ All settings use the `GEMINI_MCP_` prefix. See `.env.example` for the complete r
 | `GEMINI_MCP_REASONING_TIMEOUT` | `900` | Deep analysis timeout |
 | `GEMINI_MCP_MAX_CONTEXT_TOKENS` | `900000` | Max prompt tokens (Gemini 3 supports 1M) |
 
+### Rate Limiting
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GEMINI_MCP_RATE_LIMIT` | `0` | Requests per minute per IP (0 = disabled) |
+| `GEMINI_MCP_RATE_LIMIT_BURST` | `20` | Burst capacity before throttling |
+| `GEMINI_MCP_MAX_REQUEST_SIZE` | `10485760` | Max request body in bytes (0 = unlimited) |
+
 ### Swarm
 
 | Variable | Default | Description |
@@ -178,6 +193,7 @@ All settings use the `GEMINI_MCP_` prefix. See `.env.example` for the complete r
 | `GEMINI_MCP_ENABLE_SWARM` | `true` | Enable swarm tools |
 | `GEMINI_MCP_SWARM_MAX_DEPTH` | `3` | Max delegation depth (1-20) |
 | `GEMINI_MCP_SWARM_MAX_AGENTS` | `10` | Max concurrent agents (1-50) |
+| `GEMINI_MCP_SWARM_MAX_TURNS` | `10` | Max delegation turns per mission |
 
 ### Debate
 
@@ -295,11 +311,19 @@ The Docker container supports two authentication methods:
 # ${GEMINI_CREDS_PATH:-/dev/null}:/home/app/.gemini/oauth_creds.json:ro
 ```
 
+### Internal Limits
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GEMINI_MCP_MAX_TRACE_FILES` | `500` | Max trace files before oldest pruned |
+| `GEMINI_MCP_MAX_DEBATE_FILES` | `500` | Max debate files before oldest pruned |
+| `GEMINI_MCP_RESULT_TRUNCATION_CHARS` | `2000` | Agent result truncation length |
+
 ### Production Stack
 
 See `docker-compose.prod.yml` for a production setup with:
 - Nginx reverse proxy for connection resilience
-- Qdrant vector database for knowledge storage
+- Qdrant vector database for knowledge storage (opt-in via `--profile qdrant`)
 - Persistent volumes for data
 
 ## Development
@@ -354,5 +378,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - [Google Gemini](https://deepmind.google/technologies/gemini/) for the AI backbone
-- [MCP SDK](https://github.com/anthropics/mcp) for the protocol implementation
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) for the protocol implementation
 - [FastMCP](https://github.com/jlowin/fastmcp) for the server framework
+- [Trivy](https://trivy.dev/) for container and dependency vulnerability scanning

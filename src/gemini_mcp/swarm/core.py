@@ -31,7 +31,7 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 # Maximum turns any single mission may take (hard ceiling).
-_MAX_TURNS = 10
+_MAX_TURNS = config.swarm_max_turns
 
 
 class SwarmOrchestrator:
@@ -364,7 +364,7 @@ class SwarmOrchestrator:
         if agent_results:
             parts.append("\n--- Results from delegated agents ---")
             for agent_name, result in agent_results.items():
-                parts.append(f"\n[{agent_name}]:\n{result[:2000]}")
+                parts.append(f"\n[{agent_name}]:\n{result[:config.result_truncation_chars]}")
             parts.append("--- End of agent results ---\n")
 
         parts.append(f"Turn {turn}/{max_turns}.")

@@ -66,6 +66,18 @@ class GeminiMCPConfig(BaseSettings):
     swarm_max_agents: int = 10  # Maximum concurrent agents
 
     # =========================================================================
+    # Internal Limits (previously hardcoded)
+    # =========================================================================
+    # Maximum delegation turns per swarm mission
+    swarm_max_turns: int = 10
+    # Maximum trace files before oldest-pruned disk quota
+    max_trace_files: int = 500
+    # Maximum debate files before oldest-pruned disk quota
+    max_debate_files: int = 500
+    # Result truncation length (chars) for swarm trace results
+    result_truncation_chars: int = 2000
+
+    # =========================================================================
     # Storage Paths
     # =========================================================================
     data_dir: Path = Path.home() / ".gemini-mcp"

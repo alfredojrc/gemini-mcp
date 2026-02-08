@@ -78,7 +78,7 @@ class RelatedDebate:
 # ---------------------------------------------------------------------------
 # Disk-quota constants
 # ---------------------------------------------------------------------------
-_MAX_DEBATE_FILES = 500  # prune oldest when exceeded
+_MAX_DEBATE_FILES = config.max_debate_files
 
 
 class DebateMemory:

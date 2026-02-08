@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gemini-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "MCP server wrapping Google's Gemini AI with multi-agent swarm capabilities"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp==1.23.0",
+    "mcp>=1.25.0,<2.0",
     "google-genai>=1.50.0,<2.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",

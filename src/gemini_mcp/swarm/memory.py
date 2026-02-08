@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Disk-quota constants
 # ---------------------------------------------------------------------------
-_MAX_TRACE_FILES = 500  # prune oldest when exceeded
+_MAX_TRACE_FILES = config.max_trace_files
 
 
 class TraceStore:

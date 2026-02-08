@@ -24,8 +24,17 @@ async def swarm_execute(
     Returns:
         Mission results
     """
+    from ..config import config
     from ..swarm.core import SwarmOrchestrator
     from ..swarm.types import AgentType, ExecutionMode
+
+    # Input length validation
+    max_input_chars = config.max_context_tokens * 4
+    for name, value in [("objective", objective), ("context", context)]:
+        if len(value) > max_input_chars:
+            return {
+                "error": f"'{name}' too long ({len(value):,} chars). Maximum: {max_input_chars:,}"
+            }
 
     orchestrator = SwarmOrchestrator()
 

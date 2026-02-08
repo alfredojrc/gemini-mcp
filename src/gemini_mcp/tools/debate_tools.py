@@ -26,7 +26,17 @@ async def debate(
     Returns:
         Debate results
     """
+    from ..config import config
     from ..debate.orchestrator import DebateConfig, DebateOrchestrator, DebateStrategy
+
+    # Input length validation — prevent memory exhaustion in TF-IDF tokenization
+    max_input_chars = config.max_context_tokens * 4  # ~4 chars per token
+    for name, value in [("topic", topic), ("context", context)]:
+        if len(value) > max_input_chars:
+            return {
+                "action": action,
+                "error": f"'{name}' too long ({len(value):,} chars). Maximum: {max_input_chars:,}",
+            }
 
     orchestrator = DebateOrchestrator()
 
@@ -102,9 +112,18 @@ async def debate(
         "devil_advocate": DebateStrategy.DEVIL_ADVOCATE,
     }
 
+    resolved = strategy_map.get(strategy.lower())
+    if resolved is None:
+        valid = ", ".join(sorted(strategy_map.keys()))
+        logger.warning(f"Unknown debate strategy '{strategy}', defaulting to collaborative")
+        return {
+            "action": "start",
+            "error": f"Unknown strategy '{strategy}'. Valid strategies: {valid}",
+        }
+
     debate_config = DebateConfig(
         topic=topic,
-        strategy=strategy_map.get(strategy.lower(), DebateStrategy.COLLABORATIVE),
+        strategy=resolved,
         max_rounds=5,
         context=context,
     )

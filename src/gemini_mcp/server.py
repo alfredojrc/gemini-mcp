@@ -384,7 +384,7 @@ def main() -> None:
     _load_personas()
 
     # Log startup info
-    logger.info(f"Starting {config.server_name} v1.0.0")
+    logger.info(f"Starting {config.server_name} v1.1.0")
     logger.info(f"Transport: {config.transport}")
     logger.info(f"Swarm enabled: {config.enable_swarm}")
     logger.info(f"Debate enabled: {config.enable_debate}")
