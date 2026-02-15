@@ -48,7 +48,7 @@ jobs:
         run: docker build -t gemini-mcp:scan -f docker/Dockerfile .
 
       - name: Run Trivy vulnerability scanner (table)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           image-ref: "gemini-mcp:scan"
           format: "table"
@@ -58,7 +58,7 @@ jobs:
           scanners: "vuln"
 
       - name: Run Trivy vulnerability scanner (SARIF)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           image-ref: "gemini-mcp:scan"
           format: "sarif"
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Trivy filesystem scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: "fs"
           scan-ref: "."
